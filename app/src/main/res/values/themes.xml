@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <resources xmlns:tools="http://schemas.android.com/tools">
+
+
+
+
+        <!-- Tarjeta contenedora del formulario -->
+        <style name="Widget.Seguros.Tarjeta.Autenticacion" parent="Widget.Material3.CardView.Outlined">
+            <item name="cardBackgroundColor">@color/superficie</item>
+            <item name="cardCornerRadius">28dp</item>
+            <item name="cardElevation">2dp</item>
+            <item name="strokeColor">@color/tarjeta_autenticacion_borde</item>
+            <item name="strokeWidth">1dp</item>
+        </style>
+
+        <!-- Tipografía -->
+        <style name="AparienciaTexto.Seguros.TituloAutenticacion" parent="TextAppearance.Material3.HeadlineMedium">
+            <item name="android:textColor">@color/titulo_autenticacion</item>
+            <item name="android:textSize">32sp</item>
+            <item name="android:textStyle">bold</item>
+        </style>
+        <style name="AparienciaTexto.Seguros.SubtituloAutenticacion" parent="TextAppearance.Material3.BodyLarge">
+            <item name="android:textColor">@color/subtitulo_autenticacion</item>
+            <item name="android:textSize">16sp</item>
+        </style>
+
+        <!-- Campo de texto con borde (correo, contraseña, nombre) -->
+        <style name="Widget.Seguros.CampoAutenticacion" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+            <item name="boxBackgroundMode">outline</item>
+            <item name="boxBackgroundColor">@color/campo_fondo</item>
+            <item name="boxStrokeColor">@color/campo_borde</item>
+            <item name="boxCornerRadiusTopStart">16dp</item>
+            <item name="boxCornerRadiusTopEnd">16dp</item>
+            <item name="boxCornerRadiusBottomStart">16dp</item>
+            <item name="boxCornerRadiusBottomEnd">16dp</item>
+            <item name="hintTextColor">@color/texto_sugerencia</item>
+            <item name="android:textColorHint">@color/texto_sugerencia</item>
+            <item name="startIconTint">@color/campo_icono_azul</item>
+            <item name="endIconTint">@color/campo_icono_ojo</item>
+        </style>
+
+        <!-- Variante con iconos oscuros (pantalla de inicio de sesión) -->
+        <style name="Widget.Seguros.CampoAutenticacion.IconoOscuro">
+            <item name="startIconTint">@color/campo_icono_oscuro</item>
+            <item name="endIconTint">@color/campo_icono_oscuro</item>
+        </style>
+
+        <!-- Casilla de términos y condiciones -->
+        <style name="Widget.Seguros.CasillaTerminos" parent="Widget.Material3.CompoundButton.CheckBox">
+            <item name="buttonTint">@color/casilla_borde</item>
+            <item name="android:textColor">@color/texto_secundario</item>
+            <item name="android:textSize">16sp</item>
+        </style>
+
+        <!-- Botón principal de autenticación (el degradado va en un drawable aparte) -->
+        <style name="Widget.Seguros.Boton.Autenticacion" parent="Widget.Material3.Button">
+            <item name="backgroundTint">@color/boton_inicio_sesion</item>
+            <item name="android:textColor">@color/sobre_primario</item>
+            <item name="android:textSize">20sp</item>
+            <item name="android:textStyle">bold</item>
+            <item name="cornerRadius">12dp</item>
+            <item name="android:minHeight">60dp</item>
+        </style>
+
+        <!-- Enlaces de texto -->
+        <style name="Widget.Seguros.Enlace" parent="Widget.Material3.Button.TextButton">
+            <item name="android:textColor">@color/enlace_azul</item>
+            <item name="android:textSize">16sp</item>
+            <item name="android:textStyle">bold</item>
+        </style>
+        <style name="Widget.Seguros.Enlace.Turquesa">
+            <item name="android:textColor">@color/enlace_turquesa</item>
+            <item name="iconTint">@color/enlace_turquesa</item>
+            <item name="android:textSize">18sp</item>
+        </style>
+
+
+
+
+
+        <!-- Tema base de la app -->
+        <style name="Tema.Seguros" parent="Theme.Material3.Light.NoActionBar">
+            <item name="colorPrimary">@color/primario</item>
+            <item name="colorOnPrimary">@color/sobre_primario</item>
+            <item name="colorPrimaryContainer">@color/contenedor_primario</item>
+            <item name="colorOnPrimaryContainer">@color/sobre_contenedor_primario</item>
+
+            <item name="colorSecondary">@color/secundario</item>
+            <item name="colorOnSecondary">@color/sobre_secundario</item>
+
+            <item name="android:colorBackground">@color/fondo</item>
+            <item name="colorSurface">@color/superficie</item>
+            <item name="colorSurfaceVariant">@color/superficie_variante</item>
+            <item name="colorOnBackground">@color/sobre_fondo</item>
+            <item name="colorOnSurface">@color/sobre_superficie</item>
+            <item name="colorOnSurfaceVariant">@color/texto_secundario</item>
+            <item name="colorOutline">@color/divisor</item>
+            <item name="colorError">@color/error</item>
+
+            <item name="android:statusBarColor">@color/superficie</item>
+            <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+
+            <item name="shapeAppearanceSmallComponent">@style/Forma.Seguros.Pequena</item>
+            <item name="shapeAppearanceMediumComponent">@style/Forma.Seguros.Mediana</item>
+            <item name="shapeAppearanceLargeComponent">@style/Forma.Seguros.Grande</item>
+
+            <item name="textAppearanceHeadlineMedium">@style/AparienciaTexto.Seguros.Titular</item>
+            <item name="textAppearanceTitleMedium">@style/AparienciaTexto.Seguros.Titulo</item>
+            <item name="textAppearanceBodyMedium">@style/AparienciaTexto.Seguros.Cuerpo</item>
+            <item name="textAppearanceLabelLarge">@style/AparienciaTexto.Seguros.Boton</item>
+        </style>
+
+        <!-- Formas -->
+        <style name="Forma.Seguros.Pequena" parent="">
+            <item name="cornerFamily">rounded</item>
+            <item name="cornerSize">8dp</item>
+        </style>
+        <style name="Forma.Seguros.Mediana" parent="">
+            <item name="cornerFamily">rounded</item>
+            <item name="cornerSize">16dp</item>
+        </style>
+        <style name="Forma.Seguros.Grande" parent="">
+            <item name="cornerFamily">rounded</item>
+            <item name="cornerSize">28dp</item>
+        </style>
+
+        <!-- Tipografía -->
+        <style name="AparienciaTexto.Seguros.Titular" parent="TextAppearance.Material3.HeadlineMedium">
+            <item name="android:textColor">@color/texto_primario</item>
+            <item name="android:textSize">28sp</item>
+            <item name="android:textStyle">bold</item>
+        </style>
+        <style name="AparienciaTexto.Seguros.Titulo" parent="TextAppearance.Material3.TitleMedium">
+            <item name="android:textColor">@color/texto_primario</item>
+            <item name="android:textSize">18sp</item>
+            <item name="android:textStyle">bold</item>
+        </style>
+        <style name="AparienciaTexto.Seguros.Cuerpo" parent="TextAppearance.Material3.BodyMedium">
+            <item name="android:textColor">@color/texto_secundario</item>
+            <item name="android:textSize">14sp</item>
+        </style>
+        <style name="AparienciaTexto.Seguros.Boton" parent="TextAppearance.Material3.LabelLarge">
+            <item name="android:textSize">16sp</item>
+            <item name="android:textStyle">bold</item>
+        </style>
+
+        <!-- Botón principal (pastilla, ej. "Búsquedas Recientes", "Enviar Evidencia") -->
+        <style name="Widget.Seguros.Boton.Primario" parent="Widget.Material3.Button">
+            <item name="backgroundTint">@color/primario</item>
+            <item name="android:textColor">@color/sobre_primario</item>
+            <item name="cornerRadius">28dp</item>
+            <item name="android:minHeight">56dp</item>
+        </style>
+
+        <!-- Botón de acento (turquesa) -->
+        <style name="Widget.Seguros.Boton.Acento" parent="Widget.Material3.Button">
+            <item name="backgroundTint">@color/secundario</item>
+            <item name="android:textColor">@color/sobre_secundario</item>
+            <item name="cornerRadius">12dp</item>
+            <item name="android:minHeight">56dp</item>
+        </style>
+
+        <!-- Botón de éxito (Descargar certificado) -->
+        <style name="Widget.Seguros.Boton.Exito" parent="Widget.Material3.Button">
+            <item name="backgroundTint">@color/estado_cerrado</item>
+            <item name="android:textColor">@color/blanco</item>
+            <item name="cornerRadius">28dp</item>
+            <item name="android:minHeight">56dp</item>
+        </style>
+
+        <!-- Tarjeta blanca (detalle del siniestro) -->
+        <style name="Widget.Seguros.Tarjeta" parent="Widget.Material3.CardView.Elevated">
+            <item name="cardBackgroundColor">@color/superficie</item>
+            <item name="cardCornerRadius">20dp</item>
+            <item name="cardElevation">0dp</item>
+        </style>
+
+        <!-- Campo de texto (ID del siniestro) -->
+        <style name="Widget.Seguros.CampoTexto" parent="Widget.Material3.TextInputLayout.FilledBox">
+            <item name="boxBackgroundColor">@color/superficie_variante</item>
+            <item name="hintTextColor">@color/texto_sugerencia</item>
+        </style>
+
+        <!-- Insignia de estado -->
+        <style name="Widget.Seguros.Insignia" parent="">
+            <item name="android:textColor">@color/insignia_evaluacion_texto</item>
+            <item name="android:background">@color/insignia_evaluacion_fondo</item>
+            <item name="android:textSize">12sp</item>
+            <item name="android:textStyle">bold</item>
+            <item name="android:paddingHorizontal">16dp</item>
+            <item name="android:paddingVertical">8dp</item>
+        </style>
+    </resources>
