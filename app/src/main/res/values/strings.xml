@@ -3,78 +3,58 @@
 
     <string name="nombre_app">Mi Siniestro</string>
 
-    <!-- Campos compartidos -->
-    <string name="autenticacion_correo">Correo electrónico</string>
-    <string name="autenticacion_contrasena">Contraseña</string>
-    <string name="autenticacion_mostrar_contrasena">Mostrar contraseña</string>
-    <string name="autenticacion_ocultar_contrasena">Ocultar contraseña</string>
-    <string name="autenticacion_error_correo_vacio">Ingresa tu correo electrónico</string>
-    <string name="autenticacion_error_correo_invalido">Ingresa un correo electrónico válido</string>
-    <string name="autenticacion_error_contrasena_vacia">Ingresa tu contraseña</string>
-
-
-
-    <!-- Pantalla: Registro -->
-    <string name="registro_titulo">Crea tu cuenta</string>
-    <string name="registro_subtitulo">Regístrate para gestionar tus siniestros</string>
-    <string name="registro_nombre_completo">Nombre completo</string>
-    <string name="registro_confirmar_contrasena">Confirmar contraseña</string>
-    <string name="registro_acepto_terminos">Acepto los %1$s</string>
-    <string name="registro_terminos_enlace">términos y condiciones</string>
-    <string name="registro_boton">Registrarme</string>
-    <string name="registro_ya_tengo_cuenta">Ya tengo una cuenta</string>
-    <string name="registro_iniciar_sesion">Iniciar sesión</string>
-    <string name="registro_error_nombre_vacio">Ingresa tu nombre completo</string>
-    <string name="registro_error_contrasena_corta">La contraseña debe tener al menos %1$d caracteres</string>
-    <string name="registro_error_contrasenas_distintas">Las contraseñas no coinciden</string>
-    <string name="registro_error_terminos">Debes aceptar los términos y condiciones</string>
-    <string name="registro_error_generico">No pudimos crear tu cuenta. Inténtalo nuevamente</string>
-    <string name="registro_error_correo_existente">Ya existe una cuenta con este correo</string>
-
-
-    <!-- Pantalla: Inicio de sesión -->
-    <string name="inicio_sesion_titulo">Inicia sesión</string>
-    <string name="inicio_sesion_subtitulo">Consulta y gestiona tus siniestros</string>
-    <string name="inicio_sesion_olvidaste_contrasena">¿Olvidaste tu contraseña?</string>
-    <string name="inicio_sesion_boton">Iniciar sesión</string>
-    <string name="inicio_sesion_separador">o</string>
-    <string name="inicio_sesion_crear_cuenta">Crear una cuenta</string>
-    <string name="inicio_sesion_error_credenciales">Correo o contraseña incorrectos</string>
-    <string name="inicio_sesion_error_generico">No pudimos iniciar sesión. Inténtalo nuevamente</string>
-
-
     <!-- Generales -->
     <string name="accion_volver">Volver</string>
     <string name="accion_mas_opciones">Más opciones</string>
 
-    <!-- Pantalla 1: Consulta -->
-    <string name="consulta_titulo">Consulta tu Siniestro</string>
-    <string name="consulta_sugerencia">Ingresa ID del siniestro\</string>
-    <string name="consulta_recientes">Buscar</string>
-    <string name="consulta_error_vacio">Ingresa el ID de tu siniestro </string>
-    <string name="consulta_error_no_encontrado">No encontramos un siniestro con ese ID</string>
+    <!-- Inicio de sesión (simulado) -->
+    <string name="login_titulo">Inicia sesión</string>
+    <string name="login_subtitulo">Consulta el estado de tus siniestros</string>
+    <string name="login_correo">Correo electrónico</string>
+    <string name="login_contrasena">Contraseña</string>
+    <string name="login_mostrar_contrasena">Mostrar contraseña</string>
+    <string name="login_ocultar_contrasena">Ocultar contraseña</string>
+    <string name="login_boton">Ingresar</string>
+    <string name="login_error_correo_vacio">Ingresa tu correo electrónico</string>
+    <string name="login_error_correo_invalido">Ingresa un correo electrónico válido</string>
+    <string name="login_error_contrasena_vacia">Ingresa tu contraseña</string>
+    <string name="login_error_credenciales">Correo o contraseña incorrectos</string>
+    <string name="login_error_generico">No pudimos iniciar sesión. Inténtalo nuevamente</string>
+
+    <!-- Pantalla 1: Mis siniestros (lista) -->
+    <string name="lista_titulo">Mis siniestros</string>
+    <string name="lista_vacia">Aún no tienes siniestros reportados.</string>
+    <string name="lista_vacia_ayuda">Cuando reportes uno, lo verás aquí.</string>
+    <string name="lista_ultima_actualizacion">Actualizado: %1$s</string>
 
     <!-- Pantalla 2: Detalle -->
     <string name="detalle_titulo">Detalle del siniestro</string>
     <string name="detalle_etiqueta_cliente">Cliente / Asegurado</string>
-    <string name="detalle_etiqueta_vehiculo">Vehículo · Placa %1$s</string>
+    <string name="detalle_etiqueta_compania">Compañía: %1$s</string>
+    <string name="detalle_etiqueta_tipo">Tipo: %1$s</string>
+    <string name="detalle_etiqueta_liquidador">Atiende: %1$s</string>
+    <string name="detalle_sin_liquidador">En espera de asignación</string>
     <string name="detalle_ultima_actualizacion">Última actualización · %1$s</string>
     <string name="detalle_seguimiento_titulo">Seguimiento del caso</string>
-    <string name="detalle_seguimiento_subtitulo">Consulta el avance de tu siniestro en tiempo real</string>
+    <string name="detalle_seguimiento_subtitulo">Consulta el avance de tu siniestro</string>
+    <string name="detalle_proximo_paso_titulo">¿Qué viene ahora?</string>
+    <string name="detalle_ver_historial">Ver historial</string>
+    <string name="detalle_ver_documentos">Ver documentos</string>
     <string name="detalle_adjuntar_titulo">¿Tienes documentación adicional?</string>
     <string name="detalle_adjuntar_subtitulo">Adjunta fotos o archivos para agilizar la evaluación.</string>
     <string name="detalle_adjuntar_boton">Adjuntar evidencia</string>
 
     <!-- Estados -->
     <string name="estado_recibido">Recibido</string>
-    <string name="estado_recibido_desc">Reporte registrado correctamente</string>
+    <string name="estado_recibido_desc">Recibimos tu reporte y lo estamos revisando para asignarlo.</string>
     <string name="estado_evaluacion">En evaluación</string>
-    <string name="estado_evaluacion_desc">Nuestro equipo está analizando tu caso</string>
+    <string name="estado_evaluacion_desc">Un liquidador está revisando tu caso y puede pedirte antecedentes.</string>
     <string name="estado_liquidacion">En liquidación</string>
-    <string name="estado_liquidacion_desc">Pendiente de revisión y aprobación</string>
+    <string name="estado_liquidacion_desc">Tenemos todo lo necesario. Estamos definiendo la resolución con tu compañía de seguros.</string>
     <string name="estado_cerrado">Cerrado</string>
-    <string name="estado_cerrado_desc">Te notificaremos cuando el caso finalice</string>
-    <!-- etiqueta de estados fijos-->
+    <string name="estado_cerrado_desc">Tu caso terminó. Puedes ver el resultado y el mensaje final.</string>
+
+    <!-- Etiquetas de estado -->
     <string name="insignia_evaluacion">EN EVALUACIÓN</string>
     <string name="insignia_recibido">RECIBIDO</string>
     <string name="insignia_liquidacion">EN LIQUIDACIÓN</string>
@@ -85,26 +65,56 @@
     <string name="hito_pendiente">Pendiente</string>
     <string name="fecha_hoy">Hoy, %1$s</string>
 
+    <!-- Próximo paso según la situación -->
+    <string name="proximo_recibido">Estamos revisando tu reporte para asignarlo a un liquidador. No necesitas hacer nada por ahora.</string>
+    <string name="proximo_evaluacion_pendientes">Necesitamos que nos envíes los documentos pendientes para continuar con tu caso.</string>
+    <string name="proximo_evaluacion_sin_pendientes">Tu liquidador está revisando tu caso. Si necesitamos algo más, te avisaremos.</string>
+    <string name="proximo_liquidacion">Tenemos todo lo necesario. Estamos definiendo la resolución con tu compañía de seguros.</string>
+    <string name="proximo_cerrado">Tu caso terminó. Revisa el resultado y el mensaje de cierre.</string>
+
+    <!-- Historial -->
+    <string name="historial_titulo">Historial del caso</string>
+    <string name="historial_vacio">Todavía no hay gestiones registradas.</string>
+
+    <!-- Documentos solicitados -->
+    <string name="documentos_titulo">Documentos de tu caso</string>
+    <string name="documentos_pendiente">Pendiente</string>
+    <string name="documentos_entregado">Entregado</string>
+    <string name="documentos_sin_enviar">Aún sin enviar</string>
+    <string name="documentos_solicitado_el">Solicitado el %1$s</string>
+    <string name="documentos_ninguno">No tienes documentos pendientes.</string>
+
     <!-- Pantalla 3: Adjuntos -->
-    <string name="adjuntos_encabezado">Archivos Adjuntos. %1$s</string>
-    <string name="adjuntos_tomar_foto">Tomar Foto</string>
-    <string name="adjuntos_seleccionar_archivo">Seleccionar Archivo</string>
-    <string name="adjuntos_cantidad">Archivos Adjuntos (%1$d)</string>
+    <string name="adjuntos_encabezado">Adjuntar evidencia · %1$s</string>
+    <string name="adjuntos_tomar_foto">Tomar foto</string>
+    <string name="adjuntos_seleccionar_archivo">Seleccionar archivo</string>
+    <string name="adjuntos_tipo_documento">¿Qué documento es?</string>
+    <string name="adjuntos_cantidad">Archivos adjuntos (%1$d)</string>
     <string name="adjuntos_subiendo">Subiendo archivo… %1$d%%</string>
-    <string name="adjuntos_enviar">Enviar Evidencia</string>
+    <string name="adjuntos_enviar">Enviar evidencia</string>
     <string name="adjuntos_envio_exitoso">Evidencia enviada correctamente</string>
     <string name="adjuntos_envio_error">No se pudo enviar la evidencia. Inténtalo nuevamente</string>
     <string name="adjuntos_tamano_mb">%1$.1f MB</string>
+    <string name="adjuntos_error_formato">Solo puedes adjuntar imágenes o archivos PDF.</string>
+    <string name="adjuntos_error_tamano">El archivo supera los 5 MB. Elige uno más liviano.</string>
+    <string name="adjuntos_error_cerrado">Tu caso está cerrado, ya no se pueden adjuntar documentos.</string>
 
     <!-- Pantalla 4: Cerrado -->
-    <string name="cerrado_titulo">CERRADO</string>
-    <string name="cerrado_mensaje">Tu siniestro ha sido procesado completamente.</string>
-    <string name="cerrado_info_certificado">Tu siniestro tiene certificado.</string>
-    <string name="cerrado_descargar_certificado">Descargar Certificado Completo</string>
+    <string name="cerrado_titulo">Caso cerrado</string>
+    <string name="cerrado_resultado">Resultado: %1$s</string>
+    <string name="cerrado_resultado_aprobado">Aprobado</string>
+    <string name="cerrado_resultado_rechazado">Rechazado</string>
+    <string name="cerrado_resultado_desistido">Desistido</string>
+    <string name="cerrado_mensaje_titulo">Mensaje de cierre</string>
+
+    <!-- Avisos -->
+    <string name="avisos_titulo">Avisos</string>
+    <string name="avisos_vacio">No tienes avisos nuevos.</string>
 
     <!-- Permisos / errores generales -->
     <string name="permiso_camara_justificacion">Necesitamos acceso a la cámara para tomar fotos del daño.</string>
     <string name="error_generico">Ocurrió un error. Inténtalo nuevamente</string>
     <string name="error_sin_conexion">Sin conexión a internet</string>
+    <string name="aviso_sin_conexion_datos">Sin conexión. Información del %1$s.</string>
 
 </resources>

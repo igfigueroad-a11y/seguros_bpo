@@ -60,7 +60,7 @@ fun CampoContrasena(
                         if (visible) R.drawable.ic_ojo_tachado else R.drawable.ic_ojo
                     ),
                     contentDescription = stringResource(
-                        if (visible) R.string.cd_ocultar_contrasena else R.string.cd_mostrar_contrasena
+                        if (visible) R.string.login_ocultar_contrasena else R.string.login_mostrar_contrasena
                     ),
                     modifier = Modifier.size(Dimens.tamanoIcono)
                 )

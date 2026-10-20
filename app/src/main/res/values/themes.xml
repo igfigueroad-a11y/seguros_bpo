@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <resources xmlns:tools="http://schemas.android.com/tools">
-
-
+<resources xmlns:tools="http://schemas.android.com/tools">
 
 
         <!-- Tarjeta contenedora del formulario -->
@@ -188,7 +185,6 @@
             <item name="android:background">@color/insignia_evaluacion_fondo</item>
             <item name="android:textSize">12sp</item>
             <item name="android:textStyle">bold</item>
-            <item name="android:paddingHorizontal">16dp</item>
-            <item name="android:paddingVertical">8dp</item>
+
         </style>
     </resources>

@@ -1,0 +1,35 @@
+package cl.duocuc.miregistro.data
+import android.content.Context
+import androidx.core.content.edit
+class SesionPreferencias(context: Context) {
+
+    private val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
+
+    companion object {
+        private const val CLAVE_ID_USUARIO = "id_usuario"
+        private const val CLAVE_ID_ROL = "id_rol"
+        private const val SIN_SESION = -1L
+    }
+
+    // Guarda quién inició sesión y con qué rol
+    fun guardar(idUsuario: Long, idRol: Long) {
+        prefs.edit {
+            putLong(CLAVE_ID_USUARIO, idUsuario)
+            putLong(CLAVE_ID_ROL, idRol)
+        }
+    }
+
+    fun leer(): Long = prefs.getLong(CLAVE_ID_USUARIO, SIN_SESION)
+
+    fun leerRol(): Long = prefs.getLong(CLAVE_ID_ROL, SIN_SESION)
+
+    fun haySesion(): Boolean = leer() != SIN_SESION
+
+    // Cerrar sesión
+    fun borrar() {
+        prefs.edit {
+            remove(CLAVE_ID_USUARIO)
+            remove(CLAVE_ID_ROL)
+        }
+    }
+}
