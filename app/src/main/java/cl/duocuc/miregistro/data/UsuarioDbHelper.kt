@@ -15,6 +15,7 @@ class UsuarioDbHelper(context: Context) :
         private const val NOMBRE_BD = "seguimiento_siniestros.db"
         private const val VERSION_BD = 1
 
+
         // Tabla roles
         private const val TABLA_ROLES = "roles"
         private const val ROL_ID = "id_rol"
@@ -62,6 +63,28 @@ class UsuarioDbHelper(context: Context) :
             MessageDigest.getInstance("SHA-256")
                 .digest(clave.toByteArray())
                 .joinToString("") { "%02x".format(it) }
+
+        // Tabla siniestros
+        private const val TABLA_SINIESTROS = "siniestros"
+        private const val SIN_ID = "id_siniestro"
+        private const val SIN_NUMERO = "numero"
+        private const val SIN_TIPO = "tipo"
+        private const val SIN_DESCRIPCION = "descripcion"
+        private const val SIN_FECHA = "fecha"
+        private const val SIN_ESTADO = "estado"
+        private const val SIN_ASEGURADO = "id_asegurado"
+
+        private const val SQL_CREAR_SINIESTROS =
+            "CREATE TABLE $TABLA_SINIESTROS (" +
+                    "$SIN_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "$SIN_NUMERO TEXT NOT NULL UNIQUE, " +
+                    "$SIN_TIPO TEXT NOT NULL, " +
+                    "$SIN_DESCRIPCION TEXT, " +
+                    "$SIN_FECHA TEXT NOT NULL, " +
+                    "$SIN_ESTADO TEXT NOT NULL, " +
+                    "$SIN_ASEGURADO INTEGER NOT NULL REFERENCES $TABLA_USUARIOS($USU_ID))"
+
+
     }
 
     override fun onConfigure(db: SQLiteDatabase) {
@@ -74,9 +97,12 @@ class UsuarioDbHelper(context: Context) :
         db.execSQL(SQL_CREAR_USUARIOS)
         db.execSQL(SQL_PRECARGAR_ROLES)
         precargarUsuarios(db)
+        db.execSQL(SQL_CREAR_SINIESTROS)
+        precargarSiniestros(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLA_SINIESTROS")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_USUARIOS")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_ROLES")
         onCreate(db)
@@ -136,6 +162,30 @@ class UsuarioDbHelper(context: Context) :
         rolId = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ROL)),
         rolNombre = cursor.getString(cursor.getColumnIndexOrThrow(ROL_NOMBRE))
     )
+    private fun precargarSiniestros(db: SQLiteDatabase) {
+        val ejemplos = listOf(
+            arrayOf("SIN-26-008942", "Choque", "Choque trasero en semáforo", "2026-10-10", "En revisión", 1L),
+            arrayOf("SIN-26-001234", "Robo", "Robo de accesorios del vehículo", "2026-10-12", "Recibido", 2L),
+            arrayOf("SIN-26-004567", "Daño por granizo", "Abolladuras en techo", "2026-10-05", "Resuelto", 3L)
+        )
+        ejemplos.forEach { e ->
+            val valores = ContentValues().apply {
+                put(SIN_NUMERO, e[0] as String)
+                put(SIN_TIPO, e[1] as String)
+                put(SIN_DESCRIPCION, e[2] as String)
+                put(SIN_FECHA, e[3] as String)
+                put(SIN_ESTADO, e[4] as String)
+                put(SIN_ASEGURADO, e[5] as Long)
+            }
+            db.insert(TABLA_SINIESTROS, null, valores)
+        }
+    }
+
+    fun existeSiniestro(numero: String): Boolean =
+        readableDatabase.rawQuery(
+            "SELECT 1 FROM $TABLA_SINIESTROS WHERE $SIN_NUMERO = ?",
+            arrayOf(numero)
+        ).use { it.moveToFirst() }
     fun registrarUsuario(nombre: String, rut: String, correo: String, claveTextoPlano: String, idRol: Long = 1L): Boolean {
         val db = writableDatabase
         val valores = ContentValues().apply {
