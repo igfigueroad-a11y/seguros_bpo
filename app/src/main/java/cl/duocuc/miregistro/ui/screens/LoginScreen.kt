@@ -16,6 +16,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton // Añadido para el botón de texto
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import cl.duocuc.miregistro.viewmodel.LoginViewModel
 @Composable
 fun LoginScreen(
     onLoginExitoso: (Usuario) -> Unit,
+    onNavegarRecuperar: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = viewModel()
 ) {
@@ -58,6 +60,7 @@ fun LoginScreen(
         onContrasenaCambia = viewModel::onContrasenaCambia,
         onAlternarVisibilidad = viewModel::onAlternarVisibilidad,
         onIngresar = viewModel::onIngresar,
+        onNavegarRecuperar = onNavegarRecuperar,
         modifier = modifier
     )
 }
@@ -69,6 +72,7 @@ private fun LoginContenido(
     onContrasenaCambia: (String) -> Unit,
     onAlternarVisibilidad: () -> Unit,
     onIngresar: () -> Unit,
+    onNavegarRecuperar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -142,6 +146,17 @@ private fun LoginContenido(
                         }
                     )
 
+                    TextButton(
+                        onClick = onNavegarRecuperar,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "¿Olvidaste tu contraseña?",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
                     estado.errorGeneral?.let { idMensaje ->
                         Text(
                             text = stringResource(idMensaje),
@@ -176,7 +191,8 @@ private fun LoginPreview() {
             onCorreoCambia = {},
             onContrasenaCambia = {},
             onAlternarVisibilidad = {},
-            onIngresar = {}
+            onIngresar = {},
+            onNavegarRecuperar = {}
         )
     }
 }

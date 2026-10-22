@@ -136,4 +136,19 @@ class UsuarioDbHelper(context: Context) :
         rolId = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ROL)),
         rolNombre = cursor.getString(cursor.getColumnIndexOrThrow(ROL_NOMBRE))
     )
+    fun registrarUsuario(nombre: String, rut: String, correo: String, claveTextoPlano: String, idRol: Long = 1L): Boolean {
+        val db = writableDatabase
+        val valores = ContentValues().apply {
+            put(USU_NOMBRE, nombre)
+            put(USU_RUT, rut)
+            put(USU_CORREO, correo.trim().lowercase())
+            put(USU_CLAVE, hashearClave(claveTextoPlano))
+            put(USU_ACTIVO, 1)
+            put(USU_ROL, idRol) // 1L corresponde a ASEGURADO por defecto
+        }
+
+        // insert devuelve -1 si hay un error (por ejemplo, si el correo o RUT ya existen porque son UNIQUE)
+        val resultado = db.insert(TABLA_USUARIOS, null, valores)
+        return resultado != -1L
+    }
 }
