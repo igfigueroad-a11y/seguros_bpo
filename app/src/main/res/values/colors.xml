@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Marca / acciones -->
+    <color name="primario">#2F63E0</color>
+    <color name="primario_oscuro">#1F5FA8</color>
+    <color name="primario_claro">#2181FF</color>
+    <color name="sobre_primario">#FFFFFF</color>
+    <color name="contenedor_primario">#EAF0FD</color>
+    <color name="sobre_contenedor_primario">#1B2540</color>
+
+    <!-- Acento (botones "Enviar evidencia", "Seleccionar archivo") -->
+    <color name="secundario">#00796B</color>
+    <color name="secundario_variante">#00C9C9</color>
+    <color name="sobre_secundario">#FFFFFF</color>
+
+    <!-- Fondos y superficies -->
+    <color name="fondo">#F4F6FB</color>
+    <color name="superficie">#FFFFFF</color>
+    <color name="superficie_variante">#EBEAEB</color>
+    <color name="divisor">#E3E6EE</color>
+    <color name="sobre_fondo">#1B2540</color>
+    <color name="sobre_superficie">#1B2540</color>
+
+    <!-- Texto -->
+    <color name="texto_primario">#1B2540</color>
+    <color name="texto_secundario">#6B7285</color>
+    <color name="texto_sugerencia">#697085</color>
+    <color name="texto_deshabilitado">#B8BDD0</color>
+
+    <!-- Inicio de sesión -->
+    <color name="titulo_autenticacion">#0B2A5B</color>
+    <color name="subtitulo_autenticacion">#5B6478</color>
+    <color name="tarjeta_autenticacion_borde">#E3E6EE</color>
+    <color name="boton_inicio_sesion">#2F63E0</color>
+    <color name="campo_fondo">#FFFFFF</color>
+    <color name="campo_borde">#7C849A</color>
+    <color name="campo_icono_azul">#1B5FE0</color>
+    <color name="campo_icono_oscuro">#1B2540</color>
+    <color name="campo_icono_ojo">#6B7285</color>
+    <color name="enlace_azul">#1F4FA8</color>
+
+    <!-- Estados del siniestro (línea de tiempo) -->
+    <color name="estado_completado">#1B7F3B</color>
+    <color name="estado_cerrado">#1B7F3B</color>
+    <color name="estado_actual">#E8B13F</color>
+    <color name="estado_pendiente">#B8BDD0</color>
+
+    <!-- Insignias de etapa (texto + fondo) -->
+    <color name="insignia_recibido_fondo">#E3EEFC</color>
+    <color name="insignia_recibido_texto">#1F4FA8</color>
+    <color name="insignia_evaluacion_fondo">#FFF1CC</color>
+    <color name="insignia_evaluacion_texto">#9A6700</color>
+    <color name="insignia_liquidacion_fondo">#EAE4FB</color>
+    <color name="insignia_liquidacion_texto">#4B2FA8</color>
+    <color name="insignia_cerrado_fondo">#E3F5EA</color>
+    <color name="insignia_cerrado_texto">#1B7F3B</color>
+
+    <!-- Retroalimentación -->
+    <color name="exito">#1B7F3B</color>
+    <color name="error">#D93636</color>
+    <color name="advertencia">#9A6700</color>
+
+    <!-- Línea de tiempo -->
+    <color name="linea_tiempo">#D5DAE6</color>
+
+    <color name="negro">#000000</color>
+    <color name="blanco">#FFFFFF</color>
+
+    <color name="casilla_borde">#00796B</color>
+    <color name="enlace_turquesa">#00796B</color>
+    <color name="sombra_imagen">#99000000</color>
+</resources>
