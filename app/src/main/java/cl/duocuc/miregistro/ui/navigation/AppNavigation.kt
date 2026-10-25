@@ -1,12 +1,25 @@
 package cl.duocuc.miregistro.ui.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import cl.duocuc.miregistro.data.UsuarioDbHelper
+import cl.duocuc.miregistro.model.Siniestro
+import cl.duocuc.miregistro.ui.screens.AdjuntarEvidenciaScreen
+import cl.duocuc.miregistro.ui.screens.ConsultaSiniestroScreen
+import cl.duocuc.miregistro.ui.screens.DetalleSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.LoginScreen
+import cl.duocuc.miregistro.ui.screens.PanelLiquidadorScreen
 import cl.duocuc.miregistro.ui.screens.RecuperarClaveScreen
 import cl.duocuc.miregistro.ui.screens.RegistroScreen
 
@@ -16,64 +29,114 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     NavHost(
         navController = navController,
-        startDestination = "registro",
+        startDestination = "registro", // Inicia en la pantalla de Registro
         modifier = modifier
     ) {
-        // 1. Pantalla de Registro (Pantalla de inicio)
+
         composable("registro") {
             RegistroScreen(
                 onRegistroExitoso = {
-                    // Al registrarse entra directo al Home o Login
-                    navController.navigate("home_temporal")
+                    navController.navigate("login") {
+                        popUpTo("registro") { inclusive = true }
+                    }
                 },
-                onNavegarLogin = {
-                    navController.navigate("login")
-                }
+                onNavegarLogin = { navController.navigate("login") }
             )
         }
 
-        // 2. Pantalla de Iniciar Sesión
         composable("login") {
             LoginScreen(
                 onLoginExitoso = { usuario ->
-                    navController.navigate("home_temporal")
+                    val destino = when (usuario.rolNombre) {
+                        "LIQUIDADOR" -> "panel/${usuario.id}"
+                        "ASEGURADO" -> "consulta"
+                        else -> "home_temporal"
+                    }
+                    navController.navigate(destino) {
+                        popUpTo("login") { inclusive = true }
+                    }
                 },
-                onNavegarRecuperar = {
-                    navController.navigate("recuperar_clave")
-                }
+                onNavegarRecuperar = { navController.navigate("recuperar_clave") }
             )
         }
 
-        // 3. Pantalla de Recuperar Contraseña (3 preguntas)
         composable("recuperar_clave") {
             RecuperarClaveScreen(
-                onVolver = {
-                    navController.popBackStack() // Vuelve a la pantalla anterior (Login)
-                },
+                onVolver = { navController.popBackStack() },
                 onRecuperarExitoso = {
-                    // Acción al validar bien las respuestas, por ahora al home temporal
-                    navController.navigate("home_temporal")
+                    navController.navigate("login") {
+                        popUpTo("recuperar_clave") { inclusive = true }
+                    }
                 }
             )
         }
 
-        // 4. Home temporal
+        composable(
+            route = "panel/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { entry ->
+            val id = entry.arguments?.getLong("id") ?: 0L
+            PanelLiquidadorScreen(idLiquidador = id)
+        }
+
+        composable("consulta") {
+            ConsultaSiniestroScreen(
+                onSiniestroEncontrado = { numero ->
+                    navController.navigate("estado/$numero")
+                }
+            )
+        }
+
+        // Carga de siniestro real desde SQLite o muestra el diseño por defecto
+        composable("estado/{numero}") { entry ->
+            val numeroIngresado = entry.arguments?.getString("numero") ?: ""
+
+            val contexto = LocalContext.current
+            val db = UsuarioDbHelper(contexto)
+
+            // Intentamos buscarlo en la base de datos real
+            val siniestroReal = db.buscarSiniestroPorNumero(numeroIngresado)
+
+            // Si lo encuentra, usa la BD. Si no lo encuentra, carga tu diseño intacto como respaldo.
+            val siniestroAMostrar = siniestroReal ?: Siniestro(
+                numero = numeroIngresado.ifBlank { "SIN-26-008942" },
+                aseguradoNombre = "María González",
+                companiaNombre = "Seguros Cordillera",
+                tipoSiniestro = "Reporte de daños por colisión",
+                fechaOcurrencia = "23-10-2026",
+                idEtapa = 2L, // 2 = En evaluación
+                etapaNombre = "En evaluación",
+                fechaUltimaActualizacion = "Hoy, 10:42"
+            )
+
+            DetalleSiniestroScreen(
+                siniestro = siniestroAMostrar,
+                onVolver = { navController.popBackStack() },
+                onAdjuntarEvidencia = {
+                    // Navegamos a la nueva pantalla pasando el número de siniestro
+                    navController.navigate("evidencia/${siniestroAMostrar.numero}")
+                }
+            )
+        }
+
+        // NUEVA RUTA: Pantalla para subir fotos de evidencia
+        composable("evidencia/{numero}") { entry ->
+            val numero = entry.arguments?.getString("numero") ?: ""
+            AdjuntarEvidenciaScreen(
+                numeroSiniestro = numero,
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
         composable("home_temporal") {
-            PlaceholderPantalla("Home (Mis Siniestros)") {
-                // Sin acción por ahora
-            }
+            PlaceholderPantalla("Home (Analista)") {}
         }
     }
 }
 
 @Composable
 fun PlaceholderPantalla(titulo: String, onClick: () -> Unit) {
-    androidx.compose.foundation.layout.Box(
-        modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        androidx.compose.material3.TextButton(onClick = onClick) {
-            androidx.compose.material3.Text(text = titulo)
-        }
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        TextButton(onClick = onClick) { Text(text = titulo) }
     }
 }

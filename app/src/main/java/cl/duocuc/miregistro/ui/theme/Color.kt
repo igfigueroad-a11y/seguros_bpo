@@ -1,5 +1,4 @@
 package cl.duocuc.miregistro.ui.theme
-
 import androidx.compose.ui.graphics.Color
 
 //colores de la app (diseño propio)
@@ -21,3 +20,4 @@ val GrisDeshabilitado = Color(0xFFBDBAC7)
 //mensaje al usuario
 val Exito = Color(0xFF2E9E5B)
 val ExitoFondo = Color(0xFFE3F5EA)
+val GrisCampo = Color(0xFFEEEEEE)
