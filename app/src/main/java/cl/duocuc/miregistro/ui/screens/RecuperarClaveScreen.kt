@@ -23,8 +23,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext // Importación agregada
 import androidx.compose.ui.text.style.TextAlign
 import cl.duocuc.miregistro.R
+import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
 import cl.duocuc.miregistro.ui.components.CampoTexto
 import cl.duocuc.miregistro.ui.theme.Dimens
@@ -32,13 +34,20 @@ import cl.duocuc.miregistro.ui.theme.Dimens
 @Composable
 fun RecuperarClaveScreen(
     onVolver: () -> Unit,
-    onRecuperarExitoso: () -> Unit,
+    onRecuperarExitoso: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 1. Obtenemos el contexto y creamos la instancia de la base de datos local
+    val context = LocalContext.current
+    val dbHelper = remember { UsuarioDbHelper(context) }
+
     var correo by remember { mutableStateOf("") }
     var respuesta1 by remember { mutableStateOf("") }
     var respuesta2 by remember { mutableStateOf("") }
     var respuesta3 by remember { mutableStateOf("") }
+
+    // Estado para mostrar un error si se equivoca
+    var mensajeError by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = modifier
@@ -101,7 +110,7 @@ fun RecuperarClaveScreen(
                         valor = respuesta1,
                         onValorCambia = { respuesta1 = it },
                         etiqueta = "Respuesta 1",
-                        icono = R.drawable.ic_correo // Cambia el icono si tienes uno más adecuado
+                        icono = R.drawable.ic_correo
                     )
 
                     Text(
@@ -132,12 +141,30 @@ fun RecuperarClaveScreen(
                         icono = R.drawable.ic_correo
                     )
 
+                    // Mostrar error visual si las respuestas son incorrectas
+                    mensajeError?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(Dimens.espacioChico))
 
                     BotonPrincipal(
                         texto = "Validar respuestas",
-                        onClick = onRecuperarExitoso,
-                        modifier = Modifier.fillMaxWidth()
+                        onClick = {
+                            // 2. Usamos dbHelper (instancia) en vez de UsuarioDbHelper (clase)
+                            val sonCorrectas = dbHelper.validarRespuestasSeguridad(correo, respuesta1, respuesta2, respuesta3)
+
+                            if (sonCorrectas) {
+                                mensajeError = null
+                                onRecuperarExitoso(correo)
+                            } else {
+                                mensajeError = "Datos incorrectos. Verifica tu correo y las respuestas ingresadas."
+                            }
+                        }
                     )
 
                     TextButton(onClick = onVolver) {

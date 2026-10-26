@@ -161,8 +161,11 @@ fun DetalleSiniestroScreen(
 
                 etapas.forEachIndexed { index, etapa ->
                     val idEtapaFila = index + 1L
-                    val estaCompletado = idEtapaFila < siniestro.idEtapa
-                    val esActual = idEtapaFila == siniestro.idEtapa
+
+                    // LÓGICA CORREGIDA: Si estamos en el paso 4 y la etapa del siniestro es 4, lo marca como completado.
+                    val estaCompletado = idEtapaFila < siniestro.idEtapa || (idEtapaFila == 4L && siniestro.idEtapa == 4L)
+                    // Si está completado, ya no es el "actual" (incluso si es el paso 4).
+                    val esActual = idEtapaFila == siniestro.idEtapa && idEtapaFila != 4L
 
                     val colorPunto = when {
                         estaCompletado -> colorCompletado
@@ -171,10 +174,17 @@ fun DetalleSiniestroScreen(
                     }
 
                     val textoEstado = when {
-                        estaCompletado -> "Hoy, 09:15"
+                        estaCompletado -> siniestro.fechaUltimaActualizacion // Muestra la fecha del siniestro
                         esActual -> "Estado actual"
-                        index == 2 -> "Próximo hito"
+                        idEtapaFila == siniestro.idEtapa + 1 -> "Próximo hito"
                         else -> "Pendiente"
+                    }
+
+                    // LÓGICA CORREGIDA: Modificar el mensaje dinámicamente si el caso se cerró
+                    val textoDescripcion = if (idEtapaFila == 4L && siniestro.idEtapa == 4L) {
+                        "El caso ha sido cerrado y resuelto exitosamente"
+                    } else {
+                        etapa.second
                     }
 
                     Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
@@ -214,7 +224,7 @@ fun DetalleSiniestroScreen(
                                     fontWeight = FontWeight.Medium
                                 )
                             }
-                            Text(text = etapa.second, fontSize = 12.sp, color = colorTextSecundario)
+                            Text(text = textoDescripcion, fontSize = 12.sp, color = colorTextSecundario)
                         }
                     }
                 }

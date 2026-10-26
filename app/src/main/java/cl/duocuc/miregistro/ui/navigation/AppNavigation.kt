@@ -19,6 +19,7 @@ import cl.duocuc.miregistro.ui.screens.AdjuntarEvidenciaScreen
 import cl.duocuc.miregistro.ui.screens.ConsultaSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.DetalleSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.LoginScreen
+import cl.duocuc.miregistro.ui.screens.NuevaContrasenaScreen
 import cl.duocuc.miregistro.ui.screens.PanelLiquidadorScreen
 import cl.duocuc.miregistro.ui.screens.RecuperarClaveScreen
 import cl.duocuc.miregistro.ui.screens.RegistroScreen
@@ -29,7 +30,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     NavHost(
         navController = navController,
-        startDestination = "registro", // Inicia en la pantalla de Registro
+        startDestination = "registro",
         modifier = modifier
     ) {
 
@@ -63,9 +64,24 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         composable("recuperar_clave") {
             RecuperarClaveScreen(
                 onVolver = { navController.popBackStack() },
-                onRecuperarExitoso = {
-                    navController.navigate("login") {
+                onRecuperarExitoso = { correoValidado ->
+                    navController.navigate("nueva_contrasena/$correoValidado") {
                         popUpTo("recuperar_clave") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "nueva_contrasena/{correo}",
+            arguments = listOf(navArgument("correo") { type = NavType.StringType })
+        ) { entry ->
+            val correo = entry.arguments?.getString("correo") ?: ""
+            NuevaContrasenaScreen(
+                correo = correo,
+                onContrasenaActualizada = {
+                    navController.navigate("login") {
+                        popUpTo("nueva_contrasena/$correo") { inclusive = true }
                     }
                 }
             )
@@ -87,39 +103,34 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             )
         }
 
-        // Carga de siniestro real desde SQLite o muestra el diseño por defecto
         composable("estado/{numero}") { entry ->
             val numeroIngresado = entry.arguments?.getString("numero") ?: ""
-
             val contexto = LocalContext.current
             val db = UsuarioDbHelper(contexto)
 
-            // Intentamos buscarlo en la base de datos real
             val siniestroReal = db.buscarSiniestroPorNumero(numeroIngresado)
 
-            // Si lo encuentra, usa la BD. Si no lo encuentra, carga tu diseño intacto como respaldo.
             val siniestroAMostrar = siniestroReal ?: Siniestro(
                 numero = numeroIngresado.ifBlank { "SIN-26-008942" },
                 aseguradoNombre = "María González",
                 companiaNombre = "Seguros Cordillera",
                 tipoSiniestro = "Reporte de daños por colisión",
                 fechaOcurrencia = "23-10-2026",
-                idEtapa = 2L, // 2 = En evaluación
+                idEtapa = 2L,
                 etapaNombre = "En evaluación",
-                fechaUltimaActualizacion = "Hoy, 10:42"
+                fechaUltimaActualizacion = "Hoy, 10:42",
+                comentario = "" // <--- Agregado para cumplir con el modelo
             )
 
             DetalleSiniestroScreen(
                 siniestro = siniestroAMostrar,
                 onVolver = { navController.popBackStack() },
                 onAdjuntarEvidencia = {
-                    // Navegamos a la nueva pantalla pasando el número de siniestro
                     navController.navigate("evidencia/${siniestroAMostrar.numero}")
                 }
             )
         }
 
-        // NUEVA RUTA: Pantalla para subir fotos de evidencia
         composable("evidencia/{numero}") { entry ->
             val numero = entry.arguments?.getString("numero") ?: ""
             AdjuntarEvidenciaScreen(

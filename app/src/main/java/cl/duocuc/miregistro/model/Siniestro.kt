@@ -9,5 +9,6 @@ data class Siniestro(
     val fechaOcurrencia: String,
     val idEtapa: Long,
     val etapaNombre: String,
-    val fechaUltimaActualizacion: String
+    val fechaUltimaActualizacion: String,
+    val comentario: String = ""
 )

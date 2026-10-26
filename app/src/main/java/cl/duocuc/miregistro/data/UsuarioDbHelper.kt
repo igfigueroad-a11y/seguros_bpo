@@ -17,8 +17,7 @@ class UsuarioDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_BD = "seguimiento_siniestros.db"
-        // 1. SUBIMOS LA VERSIÓN A 5 PARA RECREAR LA BD CON LA NUEVA TABLA BLOB
-        private const val VERSION_BD = 5
+        private const val VERSION_BD = 6
 
         private const val TABLA_ROLES = "roles"
         private const val ROL_ID = "id_rol"
@@ -33,7 +32,10 @@ class UsuarioDbHelper(context: Context) :
         private const val USU_ACTIVO = "activo"
         private const val USU_ROL = "id_rol"
 
-        // Tabla siniestros
+        private const val USU_RESP1 = "respuesta1"
+        private const val USU_RESP2 = "respuesta2"
+        private const val USU_RESP3 = "respuesta3"
+
         private const val TABLA_SINIESTROS = "siniestros"
         private const val SIN_ID = "id_siniestro"
         private const val SIN_NUMERO = "numero"
@@ -48,18 +50,16 @@ class UsuarioDbHelper(context: Context) :
         private const val SIN_ASEGURADO = "id_asegurado"
         private const val SIN_LIQUIDADOR = "id_liquidador"
 
-        // Tabla documentos
         private const val TABLA_DOCUMENTOS = "documentos"
         private const val DOC_ID = "id_documento"
         private const val DOC_SINIESTRO = "numero_siniestro"
         private const val DOC_NOMBRE = "nombre"
         private const val DOC_RECIBIDO = "recibido"
 
-        // 2. NUEVA TABLA PARA EVIDENCIAS (BLOB)
         private const val TABLA_EVIDENCIA = "evidencia"
         private const val EVI_ID = "id_evidencia"
         private const val EVI_SINIESTRO = "numero_siniestro"
-        private const val EVI_IMAGEN = "imagen_blob" // Aquí se guardará el ByteArray
+        private const val EVI_IMAGEN = "imagen_blob"
         private const val EVI_FECHA = "fecha_subida"
 
         private const val CLAVE_DEMO = "Clave123"
@@ -77,7 +77,10 @@ class UsuarioDbHelper(context: Context) :
                     "$USU_CORREO TEXT NOT NULL UNIQUE, " +
                     "$USU_CLAVE TEXT NOT NULL, " +
                     "$USU_ACTIVO INTEGER NOT NULL DEFAULT 1, " +
-                    "$USU_ROL INTEGER NOT NULL REFERENCES $TABLA_ROLES($ROL_ID))"
+                    "$USU_ROL INTEGER NOT NULL REFERENCES $TABLA_ROLES($ROL_ID), " +
+                    "$USU_RESP1 TEXT, " +
+                    "$USU_RESP2 TEXT, " +
+                    "$USU_RESP3 TEXT)"
 
         private const val SQL_CREAR_SINIESTROS =
             "CREATE TABLE $TABLA_SINIESTROS (" +
@@ -101,7 +104,6 @@ class UsuarioDbHelper(context: Context) :
                     "$DOC_NOMBRE TEXT NOT NULL, " +
                     "$DOC_RECIBIDO INTEGER NOT NULL DEFAULT 0)"
 
-        // SENTENCIA PARA CREAR LA TABLA DE IMÁGENES BLOB
         private const val SQL_CREAR_EVIDENCIA =
             "CREATE TABLE $TABLA_EVIDENCIA (" +
                     "$EVI_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -138,11 +140,11 @@ class UsuarioDbHelper(context: Context) :
         precargarSiniestros(db)
         db.execSQL(SQL_CREAR_DOCUMENTOS)
         precargarDocumentos(db)
-        db.execSQL(SQL_CREAR_EVIDENCIA) // Creamos la tabla BLOB
+        db.execSQL(SQL_CREAR_EVIDENCIA)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLA_EVIDENCIA") // Borramos tabla BLOB
+        db.execSQL("DROP TABLE IF EXISTS $TABLA_EVIDENCIA")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_DOCUMENTOS")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_SINIESTROS")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_USUARIOS")
@@ -152,12 +154,12 @@ class UsuarioDbHelper(context: Context) :
 
     private fun precargarUsuarios(db: SQLiteDatabase) {
         val ejemplos = listOf(
-            arrayOf("Camila Rojas Fuentes", "15842371-5", "camila.rojas@correo.ejemplo", 1L),
-            arrayOf("Jorge Pizarro Contreras", "9418552-1", "jorge.pizarro@correo.ejemplo", 1L),
-            arrayOf("Valentina Soto Muñoz", "19205884-8", "vale.soto@correo.ejemplo", 1L),
-            arrayOf("Paulina Fernández Ruiz", "11111111-1", "paulina.fernandez@andes-bpo.ejemplo", 2L),
-            arrayOf("Matías Gallardo Silva", "12222222-2", "matias.gallardo@andes-bpo.ejemplo", 2L),
-            arrayOf("Natalia Reyes Campos", "13333333-3", "natalia.reyes@andes-bpo.ejemplo", 3L)
+            arrayOf("Camila Rojas Fuentes", "15842371-5", "camila.rojas@correo.ejemplo", 1L, "Cachupin", "Santiago", "Titanic"),
+            arrayOf("Jorge Pizarro Contreras", "9418552-1", "jorge.pizarro@correo.ejemplo", 1L, "Bobby", "Valparaiso", "Avatar"),
+            arrayOf("Valentina Soto Muñoz", "19205884-8", "vale.soto@correo.ejemplo", 1L, "Luna", "Concepcion", "Inception"),
+            arrayOf("Paulina Fernández Ruiz", "11111111-1", "paulina.fernandez@andes-bpo.ejemplo", 2L, "Max", "Temuco", "Matrix"),
+            arrayOf("Matías Gallardo Silva", "12222222-2", "matias.gallardo@andes-bpo.ejemplo", 2L, "Rocky", "La Serena", "Gladiador"),
+            arrayOf("Natalia Reyes Campos", "13333333-3", "natalia.reyes@andes-bpo.ejemplo", 3L, "Kira", "Antofagasta", "Interstellar")
         )
         val hash = hashearClave(CLAVE_DEMO)
         ejemplos.forEach { e ->
@@ -168,6 +170,9 @@ class UsuarioDbHelper(context: Context) :
                 put(USU_CLAVE, hash)
                 put(USU_ACTIVO, 1)
                 put(USU_ROL, e[3] as Long)
+                put(USU_RESP1, e[4] as String)
+                put(USU_RESP2, e[5] as String)
+                put(USU_RESP3, e[6] as String)
             }
             db.insert(TABLA_USUARIOS, null, valores)
         }
@@ -216,11 +221,6 @@ class UsuarioDbHelper(context: Context) :
         }
     }
 
-    // ------------------------------------------------------------------------
-    // MÉTODOS PARA GESTIÓN DE BLOB (EVIDENCIAS)
-    // ------------------------------------------------------------------------
-
-    // Guardar una imagen BLOB
     fun guardarEvidencia(numeroSiniestro: String, imagenBlob: ByteArray): Boolean {
         val valores = ContentValues().apply {
             put(EVI_SINIESTRO, numeroSiniestro)
@@ -229,7 +229,6 @@ class UsuarioDbHelper(context: Context) :
         return writableDatabase.insert(TABLA_EVIDENCIA, null, valores) != -1L
     }
 
-    // Obtener todas las imágenes BLOB de un siniestro
     fun obtenerEvidencias(numeroSiniestro: String): List<ByteArray> {
         val lista = mutableListOf<ByteArray>()
         readableDatabase.rawQuery(
@@ -237,15 +236,11 @@ class UsuarioDbHelper(context: Context) :
             arrayOf(numeroSiniestro)
         ).use { cursor ->
             while (cursor.moveToNext()) {
-                lista.add(cursor.getBlob(0)) // 0 es el índice de EVI_IMAGEN
+                lista.add(cursor.getBlob(0))
             }
         }
         return lista
     }
-
-    // ------------------------------------------------------------------------
-    // RESTO DE LAS CONSULTAS
-    // ------------------------------------------------------------------------
 
     fun validarLogin(correo: String, clave: String): Usuario? =
         consultarUsuarios(
@@ -276,7 +271,7 @@ class UsuarioDbHelper(context: Context) :
         rolNombre = cursor.getString(cursor.getColumnIndexOrThrow(ROL_NOMBRE))
     )
 
-    fun registrarUsuario(nombre: String, rut: String, correo: String, claveTextoPlano: String, idRol: Long = 1L): Boolean {
+    fun registrarUsuario(nombre: String, rut: String, correo: String, claveTextoPlano: String, resp1: String, resp2: String, resp3: String, idRol: Long = 1L): Boolean {
         val valores = ContentValues().apply {
             put(USU_NOMBRE, nombre)
             put(USU_RUT, rut)
@@ -284,6 +279,9 @@ class UsuarioDbHelper(context: Context) :
             put(USU_CLAVE, hashearClave(claveTextoPlano))
             put(USU_ACTIVO, 1)
             put(USU_ROL, idRol)
+            put(USU_RESP1, resp1)
+            put(USU_RESP2, resp2)
+            put(USU_RESP3, resp3)
         }
         return writableDatabase.insert(TABLA_USUARIOS, null, valores) != -1L
     }
@@ -357,11 +355,11 @@ class UsuarioDbHelper(context: Context) :
         }
     }
 
-    // ARREGLADO: Ahora respeta tus columnas reales de la base de datos
     fun buscarSiniestroPorNumero(numero: String): cl.duocuc.miregistro.model.Siniestro? {
         val db = readableDatabase
+        // SE INCLUYÓ S.$SIN_COMENTARIO PARA RECUPERAR EL MENSAJE DEL LIQUIDADOR
         val query = """
-            SELECT s.$SIN_ID, s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_TIPO, s.$SIN_FECHA, s.$SIN_ESTADO
+            SELECT s.$SIN_ID, s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_TIPO, s.$SIN_FECHA, s.$SIN_ESTADO, s.$SIN_COMENTARIO
             FROM $TABLA_SINIESTROS s
             INNER JOIN $TABLA_USUARIOS u ON s.$SIN_ASEGURADO = u.$USU_ID
             WHERE s.$SIN_NUMERO = ?
@@ -371,8 +369,8 @@ class UsuarioDbHelper(context: Context) :
         db.rawQuery(query, arrayOf(numero.trim().uppercase())).use { cursor ->
             if (cursor.moveToFirst()) {
                 val estadoStr = cursor.getString(5)
+                val comentarioLiquidador = cursor.getString(6) ?: ""
 
-                // Mapeamos tu String de estado a un número de Etapa para la línea de tiempo
                 val idEtapaCalculado = when(estadoStr) {
                     "Recibido" -> 1L
                     "En evaluación" -> 2L
@@ -385,15 +383,30 @@ class UsuarioDbHelper(context: Context) :
                     idSiniestro = cursor.getLong(0),
                     numero = cursor.getString(1),
                     aseguradoNombre = cursor.getString(2),
-                    companiaNombre = "Andes BPO", // Dato por defecto para cumplir el modelo
+                    companiaNombre = "Andes BPO",
                     tipoSiniestro = cursor.getString(3),
                     fechaOcurrencia = cursor.getString(4),
                     idEtapa = idEtapaCalculado,
                     etapaNombre = estadoStr,
-                    fechaUltimaActualizacion = cursor.getString(4)
+                    fechaUltimaActualizacion = cursor.getString(4),
+                    comentario = comentarioLiquidador // <--- SE ENVÍA EL COMENTARIO AL MODELO
                 )
             }
         }
         return siniestro
+    }
+
+    fun validarRespuestasSeguridad(correo: String, resp1: String, resp2: String, resp3: String): Boolean {
+        val query = "SELECT 1 FROM usuarios WHERE correo = ? AND respuesta1 = ? AND respuesta2 = ? AND respuesta3 = ? AND activo = 1"
+        readableDatabase.rawQuery(query, arrayOf(correo.trim().lowercase(), resp1, resp2, resp3)).use { cursor ->
+            return cursor.moveToFirst()
+        }
+    }
+
+    fun actualizarContrasena(correo: String, nuevaClave: String): Boolean {
+        val valores = ContentValues().apply {
+            put("clave_hash", hashearClave(nuevaClave))
+        }
+        return writableDatabase.update("usuarios", valores, "correo = ?", arrayOf(correo.trim().lowercase())) > 0
     }
 }

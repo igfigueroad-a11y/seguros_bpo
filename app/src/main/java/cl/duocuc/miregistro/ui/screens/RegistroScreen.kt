@@ -1,4 +1,5 @@
 package cl.duocuc.miregistro.ui.screens
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,10 +48,13 @@ fun RegistroScreen(
     var contrasena by remember { mutableStateOf("") }
     var contrasenaVisible by remember { mutableStateOf(false) }
 
+    // NUEVOS ESTADOS PARA PREGUNTAS DE SEGURIDAD
+    var respuesta1 by remember { mutableStateOf("") }
+    var respuesta2 by remember { mutableStateOf("") }
+    var respuesta3 by remember { mutableStateOf("") }
 
     val registroExitoso by viewModel.registroExitoso.collectAsStateWithLifecycle()
     val mensajeError by viewModel.mensajeError.collectAsStateWithLifecycle()
-
 
     LaunchedEffect(registroExitoso) {
         if (registroExitoso) {
@@ -128,6 +132,27 @@ fun RegistroScreen(
                         onAlternarVisible = { contrasenaVisible = !contrasenaVisible }
                     )
 
+                    // NUEVOS CAMPOS DE PREGUNTAS DE SEGURIDAD
+                    CampoTexto(
+                        valor = respuesta1,
+                        onValorCambia = { respuesta1 = it },
+                        etiqueta = "¿Cuál es el nombre de tu primera mascota?",
+                        icono = R.drawable.ic_correo
+                    )
+
+                    CampoTexto(
+                        valor = respuesta2,
+                        onValorCambia = { respuesta2 = it },
+                        etiqueta = "¿En qué ciudad naciste?",
+                        icono = R.drawable.ic_correo
+                    )
+
+                    CampoTexto(
+                        valor = respuesta3,
+                        onValorCambia = { respuesta3 = it },
+                        etiqueta = "¿Cuál es tu película favorita?",
+                        icono = R.drawable.ic_correo
+                    )
 
                     mensajeError?.let {
                         Text(
@@ -140,8 +165,8 @@ fun RegistroScreen(
                     BotonPrincipal(
                         texto = "Registrarme",
                         onClick = {
-
-                            viewModel.registrar(nombre, rut, correo, contrasena)
+                            // SE ENVÍAN LAS RESPUESTAS AL VIEWMODEL
+                            viewModel.registrar(nombre, rut, correo, contrasena, respuesta1, respuesta2, respuesta3)
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
