@@ -38,7 +38,7 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                 _registroExitoso.value = true
                 _mensajeError.value = null
             } else {
-                _mensajeError.value = "Error al registrar. El correo o RUT ya existen."
+                _mensajeError.value = "El correo o RUT ingresado ya está registrado"
             }
         }
     }
