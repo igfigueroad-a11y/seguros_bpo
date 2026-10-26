@@ -11,6 +11,7 @@ class SesionPreferencias(context: Context) {
         private const val SIN_SESION = -1L
     }
 
+    // Guarda quién inició sesión y con qué rol
     fun guardar(idUsuario: Long, idRol: Long) {
         prefs.edit {
             putLong(CLAVE_ID_USUARIO, idUsuario)

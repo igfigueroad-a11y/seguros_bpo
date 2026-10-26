@@ -1,4 +1,5 @@
 package cl.duocuc.miregistro.ui.theme
+
 import androidx.compose.ui.graphics.Color
 
 //colores de la app (diseño propio)

@@ -30,7 +30,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     NavHost(
         navController = navController,
-        startDestination = "registro",
+        startDestination = "login",
         modifier = modifier
     ) {
 

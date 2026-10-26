@@ -41,7 +41,7 @@ import cl.duocuc.miregistro.viewmodel.LoginViewModel
 @Composable
 fun LoginScreen(
     onLoginExitoso: (Usuario) -> Unit,
-    onNavegarRecuperar: () -> Unit, // NUEVO: Parámetro de navegación
+    onNavegarRecuperar: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = viewModel()
 ) {
@@ -60,7 +60,7 @@ fun LoginScreen(
         onContrasenaCambia = viewModel::onContrasenaCambia,
         onAlternarVisibilidad = viewModel::onAlternarVisibilidad,
         onIngresar = viewModel::onIngresar,
-        onNavegarRecuperar = onNavegarRecuperar, // Pasamos la función al contenido
+        onNavegarRecuperar = onNavegarRecuperar,
         modifier = modifier
     )
 }
@@ -72,7 +72,7 @@ private fun LoginContenido(
     onContrasenaCambia: (String) -> Unit,
     onAlternarVisibilidad: () -> Unit,
     onIngresar: () -> Unit,
-    onNavegarRecuperar: () -> Unit, // NUEVO: Recibimos la acción
+    onNavegarRecuperar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -146,7 +146,6 @@ private fun LoginContenido(
                         }
                     )
 
-                    // NUEVO: Botón de "Olvidaste tu contraseña" alineado a la derecha
                     TextButton(
                         onClick = onNavegarRecuperar,
                         modifier = Modifier.align(Alignment.End)
@@ -193,7 +192,7 @@ private fun LoginPreview() {
             onContrasenaCambia = {},
             onAlternarVisibilidad = {},
             onIngresar = {},
-            onNavegarRecuperar = {} // Añadido para el Preview
+            onNavegarRecuperar = {}
         )
     }
 }
