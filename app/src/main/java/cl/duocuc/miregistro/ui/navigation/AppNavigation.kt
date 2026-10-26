@@ -7,12 +7,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import cl.duocuc.miregistro.data.UsuarioDbHelper
+import cl.duocuc.miregistro.model.Siniestro
+import cl.duocuc.miregistro.ui.screens.AdjuntarEvidenciaScreen
 import cl.duocuc.miregistro.ui.screens.ConsultaSiniestroScreen
+import cl.duocuc.miregistro.ui.screens.DetalleSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.LoginScreen
 import cl.duocuc.miregistro.ui.screens.PanelLiquidadorScreen
 import cl.duocuc.miregistro.ui.screens.RecuperarClaveScreen
@@ -24,7 +29,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     NavHost(
         navController = navController,
-        startDestination = "login",
+        startDestination = "login", // Inicia en la pantalla login
         modifier = modifier
     ) {
 
@@ -82,10 +87,45 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             )
         }
 
-        // Marcador: reemplazar por la pantalla de Ignacio
+        // Carga de siniestro real desde SQLite o muestra el diseño por defecto
         composable("estado/{numero}") { entry ->
+            val numeroIngresado = entry.arguments?.getString("numero") ?: ""
+
+            val contexto = LocalContext.current
+            val db = UsuarioDbHelper(contexto)
+
+            // Intentamos buscarlo en la base de datos real
+            val siniestroReal = db.buscarSiniestroPorNumero(numeroIngresado)
+
+            // Si lo encuentra, usa la BD. Si no lo encuentra, carga tu diseño intacto como respaldo.
+            val siniestroAMostrar = siniestroReal ?: Siniestro(
+                numero = numeroIngresado.ifBlank { "SIN-26-008942" },
+                aseguradoNombre = "María González",
+                companiaNombre = "Seguros Cordillera",
+                tipoSiniestro = "Reporte de daños por colisión",
+                fechaOcurrencia = "23-10-2026",
+                idEtapa = 2L, // 2 = En evaluación
+                etapaNombre = "En evaluación",
+                fechaUltimaActualizacion = "Hoy, 10:42"
+            )
+
+            DetalleSiniestroScreen(
+                siniestro = siniestroAMostrar,
+                onVolver = { navController.popBackStack() },
+                onAdjuntarEvidencia = {
+                    // Navegamos a la nueva pantalla pasando el número de siniestro
+                    navController.navigate("evidencia/${siniestroAMostrar.numero}")
+                }
+            )
+        }
+
+        // NUEVA RUTA: Pantalla para subir fotos de evidencia
+        composable("evidencia/{numero}") { entry ->
             val numero = entry.arguments?.getString("numero") ?: ""
-            PlaceholderPantalla("Estado del siniestro $numero") {}
+            AdjuntarEvidenciaScreen(
+                numeroSiniestro = numero,
+                onVolver = { navController.popBackStack() }
+            )
         }
 
         composable("home_temporal") {
