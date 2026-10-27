@@ -1,7 +1,5 @@
 package cl.duocuc.miregistro.ui.screens
 
-
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +18,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +37,7 @@ import cl.duocuc.miregistro.viewmodel.PanelLiquidadorViewModel
 @Composable
 fun PanelLiquidadorScreen(
     idLiquidador: Long,
+    onCerrarSesion: () -> Unit = {},
     viewModel: PanelLiquidadorViewModel = viewModel()
 ) {
     val ui by viewModel.ui.collectAsState()
@@ -56,8 +56,19 @@ fun PanelLiquidadorScreen(
     ) {
         item {
             Spacer(Modifier.height(16.dp))
-            Text("Panel del Liquidador", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("Seguimiento y gestión de siniestros", style = MaterialTheme.typography.bodySmall)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Panel del Liquidador", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text("Seguimiento y gestión de siniestros", style = MaterialTheme.typography.bodySmall)
+                }
+                TextButton(onClick = onCerrarSesion) {
+                    Text("Salirse", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            }
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

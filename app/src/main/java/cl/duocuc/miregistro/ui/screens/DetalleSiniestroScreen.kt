@@ -1,5 +1,6 @@
 package cl.duocuc.miregistro.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,12 +35,10 @@ fun DetalleSiniestroScreen(
     onAdjuntarEvidencia: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Leemos tus colores de colors.xml
     val colorFondo = colorResource(id = R.color.fondo)
     val colorTextPrincipal = colorResource(id = R.color.texto_primario)
     val colorTextSecundario = colorResource(id = R.color.texto_secundario)
 
-    // Colores de la línea de tiempo
     val colorActual = colorResource(id = R.color.estado_actual)
     val colorCompletado = colorResource(id = R.color.estado_completado)
     val colorPendiente = colorResource(id = R.color.estado_pendiente)
@@ -137,11 +137,52 @@ fun DetalleSiniestroScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = colorFondo)
 
+                    // Fecha de última actualización
                     Text(
                         text = "Última actualización · ${siniestro.fechaUltimaActualizacion}",
                         fontSize = 11.sp,
                         color = colorTextSecundario
                     )
+
+                    // TARJETA TIPO ALERTA DESTACADA DEBAJO DE ÚLTIMA ACTUALIZACIÓN
+                    if (siniestro.comentario.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFEFF6FF)
+                            ),
+                            border = BorderStroke(1.dp, Color(0xFFBFDBFE))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2563EB),
+                                    modifier = Modifier.size(20.dp).padding(top = 2.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Observación del liquidador:",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1E40AF)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = siniestro.comentario,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF1E3A8A)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -161,10 +202,7 @@ fun DetalleSiniestroScreen(
 
                 etapas.forEachIndexed { index, etapa ->
                     val idEtapaFila = index + 1L
-
-                    // LÓGICA CORREGIDA: Si estamos en el paso 4 y la etapa del siniestro es 4, lo marca como completado.
                     val estaCompletado = idEtapaFila < siniestro.idEtapa || (idEtapaFila == 4L && siniestro.idEtapa == 4L)
-                    // Si está completado, ya no es el "actual" (incluso si es el paso 4).
                     val esActual = idEtapaFila == siniestro.idEtapa && idEtapaFila != 4L
 
                     val colorPunto = when {
@@ -174,13 +212,12 @@ fun DetalleSiniestroScreen(
                     }
 
                     val textoEstado = when {
-                        estaCompletado -> siniestro.fechaUltimaActualizacion // Muestra la fecha del siniestro
+                        estaCompletado -> siniestro.fechaUltimaActualizacion
                         esActual -> "Estado actual"
                         idEtapaFila == siniestro.idEtapa + 1 -> "Próximo hito"
                         else -> "Pendiente"
                     }
 
-                    // LÓGICA CORREGIDA: Modificar el mensaje dinámicamente si el caso se cerró
                     val textoDescripcion = if (idEtapaFila == 4L && siniestro.idEtapa == 4L) {
                         "El caso ha sido cerrado y resuelto exitosamente"
                     } else {

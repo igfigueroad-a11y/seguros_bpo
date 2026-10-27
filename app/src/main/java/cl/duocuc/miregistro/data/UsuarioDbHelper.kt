@@ -323,6 +323,10 @@ class UsuarioDbHelper(context: Context) :
         db.rawQuery("SELECT $DOC_NOMBRE, $DOC_RECIBIDO FROM $TABLA_DOCUMENTOS WHERE $DOC_SINIESTRO = ?", arrayOf(numero)).use { c ->
             while (c.moveToNext()) { docs.add(Documento(c.getString(0), c.getInt(1) == 1)) }
         }
+
+        // SE RECUPERAN LAS EVIDENCIAS ADJUNTAS (BLOBS DE IMÁGENES)
+        val evidenciasBlobs = obtenerEvidencias(numero)
+
         return db.rawQuery(
             "SELECT s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_PLACA, s.$SIN_PRIORIDAD, s.$SIN_ESTADO, s.$SIN_COMENTARIO " +
                     "FROM $TABLA_SINIESTROS s INNER JOIN $TABLA_USUARIOS u ON s.$SIN_ASEGURADO = u.$USU_ID " +
@@ -331,8 +335,14 @@ class UsuarioDbHelper(context: Context) :
         ).use { c ->
             if (c.moveToFirst()) {
                 DetalleSiniestro(
-                    numero = c.getString(0), cliente = c.getString(1), placa = c.getString(2) ?: "",
-                    prioridad = c.getString(3), estado = c.getString(4), comentario = c.getString(5) ?: "", documentos = docs
+                    numero = c.getString(0),
+                    cliente = c.getString(1),
+                    placa = c.getString(2) ?: "",
+                    prioridad = c.getString(3),
+                    estado = c.getString(4),
+                    comentario = c.getString(5) ?: "",
+                    documentos = docs,
+                    evidencias = evidenciasBlobs // <-- AHORA SE ENVÍA LA LISTA DE EVIDENCIAS
                 )
             } else null
         }
@@ -357,7 +367,6 @@ class UsuarioDbHelper(context: Context) :
 
     fun buscarSiniestroPorNumero(numero: String): cl.duocuc.miregistro.model.Siniestro? {
         val db = readableDatabase
-        // SE INCLUYÓ S.$SIN_COMENTARIO PARA RECUPERAR EL MENSAJE DEL LIQUIDADOR
         val query = """
             SELECT s.$SIN_ID, s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_TIPO, s.$SIN_FECHA, s.$SIN_ESTADO, s.$SIN_COMENTARIO
             FROM $TABLA_SINIESTROS s
@@ -389,7 +398,7 @@ class UsuarioDbHelper(context: Context) :
                     idEtapa = idEtapaCalculado,
                     etapaNombre = estadoStr,
                     fechaUltimaActualizacion = cursor.getString(4),
-                    comentario = comentarioLiquidador // <--- SE ENVÍA EL COMENTARIO AL MODELO
+                    comentario = comentarioLiquidador
                 )
             }
         }

@@ -1,5 +1,6 @@
 package cl.duocuc.miregistro.ui.screens
 
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +17,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton // Añadido para el botón de texto
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,6 +43,7 @@ import cl.duocuc.miregistro.viewmodel.LoginViewModel
 fun LoginScreen(
     onLoginExitoso: (Usuario) -> Unit,
     onNavegarRecuperar: () -> Unit,
+    onNavegarRegistro: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = viewModel()
 ) {
@@ -61,6 +63,7 @@ fun LoginScreen(
         onAlternarVisibilidad = viewModel::onAlternarVisibilidad,
         onIngresar = viewModel::onIngresar,
         onNavegarRecuperar = onNavegarRecuperar,
+        onNavegarRegistro = onNavegarRegistro,
         modifier = modifier
     )
 }
@@ -73,6 +76,7 @@ private fun LoginContenido(
     onAlternarVisibilidad: () -> Unit,
     onIngresar: () -> Unit,
     onNavegarRecuperar: () -> Unit,
+    onNavegarRegistro: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -173,6 +177,18 @@ private fun LoginContenido(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    TextButton(
+                        onClick = onNavegarRegistro,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "¿No tienes una cuenta? Regístrate",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
+
                     if (estado.cargando) {
                         CircularProgressIndicator()
                     }
@@ -192,7 +208,8 @@ private fun LoginPreview() {
             onContrasenaCambia = {},
             onAlternarVisibilidad = {},
             onIngresar = {},
-            onNavegarRecuperar = {}
+            onNavegarRecuperar = {},
+            onNavegarRegistro = {} //
         )
     }
 }

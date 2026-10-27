@@ -12,6 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.ui.unit.dp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,9 +38,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.R
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
+import cl.duocuc.miregistro.ui.components.BotonSecundario
 import cl.duocuc.miregistro.ui.components.CampoContrasena
 import cl.duocuc.miregistro.ui.components.CampoTexto
 import cl.duocuc.miregistro.ui.theme.Dimens
+import cl.duocuc.miregistro.ui.theme.TextoClaro
 import cl.duocuc.miregistro.viewmodel.RegistroViewModel
 
 @Composable
@@ -48,7 +58,7 @@ fun RegistroScreen(
     var contrasena by remember { mutableStateOf("") }
     var contrasenaVisible by remember { mutableStateOf(false) }
 
-    // NUEVOS ESTADOS PARA PREGUNTAS DE SEGURIDAD
+    var mostrarPreguntas by remember { mutableStateOf(false) }
     var respuesta1 by remember { mutableStateOf("") }
     var respuesta2 by remember { mutableStateOf("") }
     var respuesta3 by remember { mutableStateOf("") }
@@ -131,28 +141,62 @@ fun RegistroScreen(
                         visible = contrasenaVisible,
                         onAlternarVisible = { contrasenaVisible = !contrasenaVisible }
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // NUEVOS CAMPOS DE PREGUNTAS DE SEGURIDAD
-                    CampoTexto(
-                        valor = respuesta1,
-                        onValorCambia = { respuesta1 = it },
-                        etiqueta = "¿Cuál es el nombre de tu primera mascota?",
-                        icono = R.drawable.ic_correo
-                    )
 
-                    CampoTexto(
-                        valor = respuesta2,
-                        onValorCambia = { respuesta2 = it },
-                        etiqueta = "¿En qué ciudad naciste?",
-                        icono = R.drawable.ic_correo
-                    )
+                    OutlinedButton(
+                        onClick = { mostrarPreguntas = !mostrarPreguntas },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (mostrarPreguntas) "Ocultar preguntas de seguridad" else "Configurar preguntas de seguridad")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = if (mostrarPreguntas) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null
+                        )
+                    }
 
-                    CampoTexto(
-                        valor = respuesta3,
-                        onValorCambia = { respuesta3 = it },
-                        etiqueta = "¿Cuál es tu película favorita?",
-                        icono = R.drawable.ic_correo
-                    )
+
+                    AnimatedVisibility(visible = mostrarPreguntas) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Text(
+                                text = "Responde estas 3 preguntas. Son obligatorias y te servirán para recuperar el acceso a tu cuenta si olvidas tu contraseña.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            CampoTexto(
+                                valor = respuesta1,
+                                onValorCambia = { respuesta1 = it },
+                                etiqueta = "¿Cuál es el nombre de tu primera mascota?",
+                                icono = R.drawable.ic_correo // Cambia este ícono si tienes otro mejor
+                            )
+
+                            CampoTexto(
+                                valor = respuesta2,
+                                onValorCambia = { respuesta2 = it },
+                                etiqueta = "¿En qué ciudad naciste?",
+                                icono = R.drawable.ic_correo
+                            )
+
+                            CampoTexto(
+                                valor = respuesta3,
+                                onValorCambia = { respuesta3 = it },
+                                etiqueta = "¿Cuál es tu película favorita?",
+                                icono = R.drawable.ic_correo
+                            )
+                        }
+                    }
+
+
+
+
+
 
                     mensajeError?.let {
                         Text(

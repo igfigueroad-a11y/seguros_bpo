@@ -33,7 +33,8 @@ data class DetalleSiniestro(
     val prioridad: String,
     val estado: String,
     val comentario: String,
-    val documentos: List<Documento>
+    val documentos: List<Documento>,
+    val evidencias: List<ByteArray> = emptyList()
 )
 
 data class PanelUiState(

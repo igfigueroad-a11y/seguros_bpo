@@ -1,5 +1,4 @@
 package cl.duocuc.miregistro.ui.navigation
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -23,6 +22,7 @@ import cl.duocuc.miregistro.ui.screens.NuevaContrasenaScreen
 import cl.duocuc.miregistro.ui.screens.PanelLiquidadorScreen
 import cl.duocuc.miregistro.ui.screens.RecuperarClaveScreen
 import cl.duocuc.miregistro.ui.screens.RegistroScreen
+import cl.duocuc.miregistro.ui.screens.SiniestroCerradoScreen
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
@@ -57,7 +57,8 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                         popUpTo("login") { inclusive = true }
                     }
                 },
-                onNavegarRecuperar = { navController.navigate("recuperar_clave") }
+                onNavegarRecuperar = { navController.navigate("recuperar_clave") },
+                onNavegarRegistro = { navController.navigate("registro") }
             )
         }
 
@@ -92,7 +93,14 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             arguments = listOf(navArgument("id") { type = NavType.LongType })
         ) { entry ->
             val id = entry.arguments?.getLong("id") ?: 0L
-            PanelLiquidadorScreen(idLiquidador = id)
+            PanelLiquidadorScreen(
+                idLiquidador = id,
+                onCerrarSesion = {
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable("consulta") {
@@ -119,16 +127,23 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 idEtapa = 2L,
                 etapaNombre = "En evaluación",
                 fechaUltimaActualizacion = "Hoy, 10:42",
-                comentario = "" // <--- Agregado para cumplir con el modelo
+                comentario = ""
             )
 
-            DetalleSiniestroScreen(
-                siniestro = siniestroAMostrar,
-                onVolver = { navController.popBackStack() },
-                onAdjuntarEvidencia = {
-                    navController.navigate("evidencia/${siniestroAMostrar.numero}")
-                }
-            )
+            if (siniestroAMostrar.etapaNombre.equals("Cerrado", ignoreCase = true)) {
+                SiniestroCerradoScreen(
+                    siniestro = siniestroAMostrar,
+                    onVolver = { navController.popBackStack() }
+                )
+            } else {
+                DetalleSiniestroScreen(
+                    siniestro = siniestroAMostrar,
+                    onVolver = { navController.popBackStack() },
+                    onAdjuntarEvidencia = {
+                        navController.navigate("evidencia/${siniestroAMostrar.numero}")
+                    }
+                )
+            }
         }
 
         composable("evidencia/{numero}") { entry ->

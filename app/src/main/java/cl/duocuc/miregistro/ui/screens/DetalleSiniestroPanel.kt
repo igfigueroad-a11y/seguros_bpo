@@ -1,7 +1,8 @@
 package cl.duocuc.miregistro.ui.screens
 
-
-import androidx.compose.foundation.border
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -35,7 +37,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -87,9 +92,6 @@ fun DetalleSiniestroPanel(
                 }
             }
 
-            Text("Línea de tiempo del siniestro", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            LineaDeTiempo(d.estado)
-
             Text("Documentos recibidos", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             d.documentos.forEach { doc ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -105,6 +107,38 @@ fun DetalleSiniestroPanel(
                         color = if (doc.recibido) Verde else Naranja,
                         fontSize = 13.sp
                     )
+                }
+            }
+
+            // NUEVA SECCIÓN: EVIDENCIAS FOTOGRÁFICAS ADJUNTADAS
+            Text("Evidencias adjuntas por el asegurado", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+
+            if (d.evidencias.isEmpty()) {
+                Text(
+                    text = "No se han adjuntado fotos ni evidencias aún.",
+                    fontSize = 12.sp,
+                    color = Gris
+                )
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(d.evidencias) { bytes ->
+                        val bitmap = remember(bytes) {
+                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                        }
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = "Foto Evidencia",
+                                modifier = Modifier
+                                    .size(90.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
                 }
             }
 
@@ -132,41 +166,20 @@ fun DetalleSiniestroPanel(
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) { Text("Guardar cambios") }
 
-            mensaje?.let { Text(it, color = Verde, fontSize = 13.sp) }
-        }
-    }
-}
-
-@Composable
-private fun LineaDeTiempo(estadoActual: String) {
-    val indiceActual = ESTADOS.indexOf(estadoActual)
-    ESTADOS.forEachIndexed { i, nombre ->
-        val color = when {
-            i < indiceActual -> Verde
-            i == indiceActual -> Naranja
-            else -> Gris
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(vertical = 4.dp)
-        ) {
-            if (i < indiceActual) {
-                Icon(Icons.Filled.CheckCircle, null, tint = color, modifier = Modifier.size(20.dp))
-            } else {
-                Box(Modifier.size(20.dp).border(2.dp, color, CircleShape))
-            }
-            Spacer(Modifier.width(8.dp))
-            Column {
-                Text(nombre, color = color, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text(
-                    text = when {
-                        i < indiceActual -> "Completado"
-                        i == indiceActual -> "Estado actual"
-                        else -> "Pendiente"
-                    },
-                    fontSize = 11.sp,
-                    color = Gris
-                )
+            // TARJETA DESTACADA DE CONFIRMACIÓN
+            mensaje?.let {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFDCFCE7), shape = RoundedCornerShape(8.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Verde, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Comentario enviado y guardado correctamente", color = Verde, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
