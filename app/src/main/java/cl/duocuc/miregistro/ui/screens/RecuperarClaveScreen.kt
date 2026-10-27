@@ -37,7 +37,7 @@ fun RecuperarClaveScreen(
     onRecuperarExitoso: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // 1. Obtenemos el contexto y creamos la instancia de la base de datos local
+
     val context = LocalContext.current
     val dbHelper = remember { UsuarioDbHelper(context) }
 
@@ -110,7 +110,7 @@ fun RecuperarClaveScreen(
                         valor = respuesta1,
                         onValorCambia = { respuesta1 = it },
                         etiqueta = "Respuesta 1",
-                        icono = R.drawable.ic_correo
+                        icono = R.drawable.ic_candado
                     )
 
                     Text(
@@ -124,7 +124,7 @@ fun RecuperarClaveScreen(
                         valor = respuesta2,
                         onValorCambia = { respuesta2 = it },
                         etiqueta = "Respuesta 2",
-                        icono = R.drawable.ic_correo
+                        icono = R.drawable.ic_candado
                     )
 
                     Text(
@@ -138,10 +138,10 @@ fun RecuperarClaveScreen(
                         valor = respuesta3,
                         onValorCambia = { respuesta3 = it },
                         etiqueta = "Respuesta 3",
-                        icono = R.drawable.ic_correo
+                        icono = R.drawable.ic_candado
                     )
 
-                    // Mostrar error visual si las respuestas son incorrectas
+
                     mensajeError?.let {
                         Text(
                             text = it,

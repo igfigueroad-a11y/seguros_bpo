@@ -128,7 +128,7 @@ fun AdjuntarEvidenciaScreen(
                 }
             }
 
-            // Botones de acción
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(
                     onClick = {
@@ -153,7 +153,7 @@ fun AdjuntarEvidenciaScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Botón de guardar en SQLite
+
             Button(
                 onClick = {
                     if (imagenBitmap != null) {

@@ -110,7 +110,7 @@ fun DetalleSiniestroPanel(
                 }
             }
 
-            // NUEVA SECCIÓN: EVIDENCIAS FOTOGRÁFICAS ADJUNTADAS
+
             Text("Evidencias adjuntas por el asegurado", fontWeight = FontWeight.Bold, fontSize = 13.sp)
 
             if (d.evidencias.isEmpty()) {
@@ -166,7 +166,7 @@ fun DetalleSiniestroPanel(
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) { Text("Guardar cambios") }
 
-            // TARJETA DESTACADA DE CONFIRMACIÓN
+
             mensaje?.let {
                 Box(
                     modifier = Modifier

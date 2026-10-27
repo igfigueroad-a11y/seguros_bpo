@@ -1,5 +1,7 @@
 package cl.duocuc.miregistro.ui.navigation
+
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -7,13 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cl.duocuc.miregistro.data.UsuarioDbHelper
-import cl.duocuc.miregistro.model.Siniestro
 import cl.duocuc.miregistro.ui.screens.AdjuntarEvidenciaScreen
 import cl.duocuc.miregistro.ui.screens.ConsultaSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.DetalleSiniestroScreen
@@ -50,7 +52,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 onLoginExitoso = { usuario ->
                     val destino = when (usuario.rolNombre) {
                         "LIQUIDADOR" -> "panel/${usuario.id}"
-                        "ASEGURADO" -> "consulta"
+                        "ASEGURADO" -> "consulta/${usuario.id}"
                         else -> "home_temporal"
                     }
                     navController.navigate(destino) {
@@ -103,46 +105,64 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             )
         }
 
-        composable("consulta") {
+        composable(
+            route = "consulta/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { entry ->
+            val idUsuario = entry.arguments?.getLong("id") ?: 0L
             ConsultaSiniestroScreen(
                 onSiniestroEncontrado = { numero ->
-                    navController.navigate("estado/$numero")
+                    navController.navigate("estado/$numero/$idUsuario")
+                },
+
+                onCerrarSesion = {
+                    navController.navigate("login") {
+                        popUpTo("login") { inclusive = true }
+                    }
                 }
             )
         }
 
-        composable("estado/{numero}") { entry ->
+        composable(
+            route = "estado/{numero}/{id}",
+            arguments = listOf(
+                navArgument("numero") { type = NavType.StringType },
+                navArgument("id") { type = NavType.LongType }
+            )
+        ) { entry ->
             val numeroIngresado = entry.arguments?.getString("numero") ?: ""
+            val idUsuario = entry.arguments?.getLong("id") ?: 0L
             val contexto = LocalContext.current
             val db = UsuarioDbHelper(contexto)
 
-            val siniestroReal = db.buscarSiniestroPorNumero(numeroIngresado)
 
-            val siniestroAMostrar = siniestroReal ?: Siniestro(
-                numero = numeroIngresado.ifBlank { "SIN-26-008942" },
-                aseguradoNombre = "María González",
-                companiaNombre = "Seguros Cordillera",
-                tipoSiniestro = "Reporte de daños por colisión",
-                fechaOcurrencia = "23-10-2026",
-                idEtapa = 2L,
-                etapaNombre = "En evaluación",
-                fechaUltimaActualizacion = "Hoy, 10:42",
-                comentario = ""
-            )
+            val siniestroReal = db.buscarSiniestroSeguro(numeroIngresado, idUsuario)
 
-            if (siniestroAMostrar.etapaNombre.equals("Cerrado", ignoreCase = true)) {
-                SiniestroCerradoScreen(
-                    siniestro = siniestroAMostrar,
-                    onVolver = { navController.popBackStack() }
-                )
+            if (siniestroReal != null) {
+                if (siniestroReal.etapaNombre.equals("Cerrado", ignoreCase = true)) {
+                    SiniestroCerradoScreen(
+                        siniestro = siniestroReal,
+                        onVolver = { navController.popBackStack() }
+                    )
+                } else {
+                    DetalleSiniestroScreen(
+                        siniestro = siniestroReal,
+                        onVolver = { navController.popBackStack() },
+                        onAdjuntarEvidencia = {
+                            navController.navigate("evidencia/${siniestroReal.numero}")
+                        }
+                    )
+                }
             } else {
-                DetalleSiniestroScreen(
-                    siniestro = siniestroAMostrar,
-                    onVolver = { navController.popBackStack() },
-                    onAdjuntarEvidencia = {
-                        navController.navigate("evidencia/${siniestroAMostrar.numero}")
+
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Siniestro no encontrado o acceso denegado", fontWeight = FontWeight.Bold)
+                        TextButton(onClick = { navController.popBackStack() }) {
+                            Text("Volver al buscador")
+                        }
                     }
-                )
+                }
             }
         }
 

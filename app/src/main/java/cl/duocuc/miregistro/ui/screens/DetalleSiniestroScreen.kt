@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -63,16 +62,8 @@ fun DetalleSiniestroScreen(
                     }
                 },
                 actions = {
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(colorResource(id = R.color.contenedor_primario)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = colorResource(id = R.color.primario), modifier = Modifier.size(16.dp))
-                    }
+
+                    Spacer(modifier = Modifier.width(48.dp))
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colorFondo)
             )
@@ -88,7 +79,7 @@ fun DetalleSiniestroScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
-            // 1. Tarjeta principal superior
+            // Tarjeta principal
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.superficie)),
@@ -144,7 +135,7 @@ fun DetalleSiniestroScreen(
                         color = colorTextSecundario
                     )
 
-                    // TARJETA TIPO ALERTA DESTACADA DEBAJO DE ÚLTIMA ACTUALIZACIÓN
+
                     if (siniestro.comentario.isNotBlank()) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Card(
@@ -162,7 +153,7 @@ fun DetalleSiniestroScreen(
                                 Icon(
                                     imageVector = Icons.Default.Info,
                                     contentDescription = null,
-                                    tint = Color(0xFF2563EB),
+                                    tint = Color(0xFF2196F3),
                                     modifier = Modifier.size(20.dp).padding(top = 2.dp)
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
@@ -186,7 +177,7 @@ fun DetalleSiniestroScreen(
                 }
             }
 
-            // 2. Sección de Seguimiento del caso (Línea de tiempo)
+            // 2. Seguimiento del caso (Línea de tiempo)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Seguimiento del caso", fontSize = 18.sp, color = colorTextPrincipal, fontWeight = FontWeight.Bold)
                 Text("Consulta el avance de tu siniestro en tiempo real", fontSize = 12.sp, color = colorTextSecundario)
@@ -239,6 +230,7 @@ fun DetalleSiniestroScreen(
                                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color.White))
                                 }
                             }
+                            // Corrección del error de sintaxis aquí
                             if (index < etapas.size - 1) {
                                 Box(modifier = Modifier.width(2.dp).weight(1f).background(colorLinea))
                             }
@@ -267,7 +259,7 @@ fun DetalleSiniestroScreen(
                 }
             }
 
-            // 3. Tarjeta Inferior de Adjuntar Evidencia
+            // 3. Tarjeta de Adjuntar Evidencia
             Card(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
                 colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.contenedor_primario)),

@@ -116,14 +116,14 @@ fun RegistroScreen(
                         valor = nombre,
                         onValorCambia = { nombre = it },
                         etiqueta = "Nombre completo",
-                        icono = R.drawable.ic_correo
+                        icono = R.drawable.ic_persona
                     )
 
                     CampoTexto(
                         valor = rut,
                         onValorCambia = { rut = it },
                         etiqueta = "RUT",
-                        icono = R.drawable.ic_correo
+                        icono = R.drawable.ic_persona
                     )
 
                     CampoTexto(
@@ -174,21 +174,21 @@ fun RegistroScreen(
                                 valor = respuesta1,
                                 onValorCambia = { respuesta1 = it },
                                 etiqueta = "¿Cuál es el nombre de tu primera mascota?",
-                                icono = R.drawable.ic_correo // Cambia este ícono si tienes otro mejor
+                                icono = R.drawable.ic_candado
                             )
 
                             CampoTexto(
                                 valor = respuesta2,
                                 onValorCambia = { respuesta2 = it },
                                 etiqueta = "¿En qué ciudad naciste?",
-                                icono = R.drawable.ic_correo
+                                icono = R.drawable.ic_candado
                             )
 
                             CampoTexto(
                                 valor = respuesta3,
                                 onValorCambia = { respuesta3 = it },
                                 etiqueta = "¿Cuál es tu película favorita?",
-                                icono = R.drawable.ic_correo
+                                icono = R.drawable.ic_candado
                             )
                         }
                     }
@@ -209,7 +209,7 @@ fun RegistroScreen(
                     BotonPrincipal(
                         texto = "Registrarme",
                         onClick = {
-                            // SE ENVÍAN LAS RESPUESTAS AL VIEWMODEL
+
                             viewModel.registrar(nombre, rut, correo, contrasena, respuesta1, respuesta2, respuesta3)
                         },
                         modifier = Modifier.fillMaxWidth()

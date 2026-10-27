@@ -324,7 +324,6 @@ class UsuarioDbHelper(context: Context) :
             while (c.moveToNext()) { docs.add(Documento(c.getString(0), c.getInt(1) == 1)) }
         }
 
-        // SE RECUPERAN LAS EVIDENCIAS ADJUNTAS (BLOBS DE IMÁGENES)
         val evidenciasBlobs = obtenerEvidencias(numero)
 
         return db.rawQuery(
@@ -342,7 +341,7 @@ class UsuarioDbHelper(context: Context) :
                     estado = c.getString(4),
                     comentario = c.getString(5) ?: "",
                     documentos = docs,
-                    evidencias = evidenciasBlobs // <-- AHORA SE ENVÍA LA LISTA DE EVIDENCIAS
+                    evidencias = evidenciasBlobs
                 )
             } else null
         }
@@ -376,6 +375,47 @@ class UsuarioDbHelper(context: Context) :
 
         var siniestro: cl.duocuc.miregistro.model.Siniestro? = null
         db.rawQuery(query, arrayOf(numero.trim().uppercase())).use { cursor ->
+            if (cursor.moveToFirst()) {
+                val estadoStr = cursor.getString(5)
+                val comentarioLiquidador = cursor.getString(6) ?: ""
+
+                val idEtapaCalculado = when(estadoStr) {
+                    "Recibido" -> 1L
+                    "En evaluación" -> 2L
+                    "En liquidación" -> 3L
+                    "Cerrado" -> 4L
+                    else -> 1L
+                }
+
+                siniestro = cl.duocuc.miregistro.model.Siniestro(
+                    idSiniestro = cursor.getLong(0),
+                    numero = cursor.getString(1),
+                    aseguradoNombre = cursor.getString(2),
+                    companiaNombre = "Andes BPO",
+                    tipoSiniestro = cursor.getString(3),
+                    fechaOcurrencia = cursor.getString(4),
+                    idEtapa = idEtapaCalculado,
+                    etapaNombre = estadoStr,
+                    fechaUltimaActualizacion = cursor.getString(4),
+                    comentario = comentarioLiquidador
+                )
+            }
+        }
+        return siniestro
+    }
+
+
+    fun buscarSiniestroSeguro(numero: String, idUsuario: Long): cl.duocuc.miregistro.model.Siniestro? {
+        val db = readableDatabase
+        val query = """
+            SELECT s.$SIN_ID, s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_TIPO, s.$SIN_FECHA, s.$SIN_ESTADO, s.$SIN_COMENTARIO
+            FROM $TABLA_SINIESTROS s
+            INNER JOIN $TABLA_USUARIOS u ON s.$SIN_ASEGURADO = u.$USU_ID
+            WHERE s.$SIN_NUMERO = ? AND s.$SIN_ASEGURADO = ?
+        """.trimIndent()
+
+        var siniestro: cl.duocuc.miregistro.model.Siniestro? = null
+        db.rawQuery(query, arrayOf(numero.trim().uppercase(), idUsuario.toString())).use { cursor ->
             if (cursor.moveToFirst()) {
                 val estadoStr = cursor.getString(5)
                 val comentarioLiquidador = cursor.getString(6) ?: ""

@@ -66,7 +66,7 @@ fun PanelLiquidadorScreen(
                     Text("Seguimiento y gestión de siniestros", style = MaterialTheme.typography.bodySmall)
                 }
                 TextButton(onClick = onCerrarSesion) {
-                    Text("Salirse", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Text("Salir", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             }
         }
