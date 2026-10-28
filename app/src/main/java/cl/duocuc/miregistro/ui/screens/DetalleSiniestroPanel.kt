@@ -3,38 +3,16 @@ package cl.duocuc.miregistro.ui.screens
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.duocuc.miregistro.model.DetalleSiniestro
@@ -56,12 +36,15 @@ private val Gris = Color(0xFF9CA3AF)
 fun DetalleSiniestroPanel(
     d: DetalleSiniestro,
     mensaje: String?,
-    onGuardar: (String, String) -> Unit,
+    onGuardarEstado: (String) -> Unit,           // Solo guarda el estado
+    onEnviarComentario: (String) -> Unit,        // Solo envía el comentario
     onSolicitarDocumento: (String) -> Unit
 ) {
     var estado by remember(d.numero, d.estado) { mutableStateOf(d.estado) }
     var comentario by remember(d.numero, d.comentario) { mutableStateOf(d.comentario) }
     var expandido by remember { mutableStateOf(false) }
+    var errorComentario by remember { mutableStateOf(false) }
+    var mensajeExitoComentario by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -84,13 +67,21 @@ fun DetalleSiniestroPanel(
                 )
                 ExposedDropdownMenu(expanded = expandido, onDismissRequest = { expandido = false }) {
                     ESTADOS.forEach { e ->
-                        DropdownMenuItem(
-                            text = { Text(e) },
-                            onClick = { estado = e; expandido = false }
-                        )
+                        DropdownMenuItem(text = { Text(e) }, onClick = { estado = e; expandido = false })
                     }
                 }
             }
+
+            // BOTÓN GUARDAR CAMBIOS (Solo afecta al estado, sin tocar el comentario)
+            Button(
+                onClick = { onGuardarEstado(estado) },
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("Guardar cambios de estado", fontWeight = FontWeight.Bold)
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
             Text("Documentos recibidos", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             d.documentos.forEach { doc ->
@@ -102,41 +93,34 @@ fun DetalleSiniestroPanel(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = if (doc.recibido) doc.nombre else "Falta documento: ${doc.nombre}",
-                        color = if (doc.recibido) Verde else Naranja,
-                        fontSize = 13.sp
-                    )
+                    Text(text = if (doc.recibido) doc.nombre else "Falta documento: ${doc.nombre}", color = if (doc.recibido) Verde else Naranja, fontSize = 13.sp)
                 }
             }
-
 
             Text("Evidencias adjuntas por el asegurado", fontWeight = FontWeight.Bold, fontSize = 13.sp)
 
             if (d.evidencias.isEmpty()) {
-                Text(
-                    text = "No se han adjuntado fotos ni evidencias aún.",
-                    fontSize = 12.sp,
-                    color = Gris
-                )
+                Text(text = "No se han adjuntado fotos ni evidencias aún.", fontSize = 12.sp, color = Gris)
             } else {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(d.evidencias) { bytes ->
-                        val bitmap = remember(bytes) {
-                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-                        }
-                        if (bitmap != null) {
-                            Image(
-                                bitmap = bitmap,
-                                contentDescription = "Foto Evidencia",
-                                modifier = Modifier
-                                    .size(90.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
-                            )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    items(d.evidencias) { ev ->
+                        if (ev.esImagen) {
+                            val bitmap = remember(ev.bytes) { BitmapFactory.decodeByteArray(ev.bytes, 0, ev.bytes.size)?.asImageBitmap() }
+                            if (bitmap != null) {
+                                Image(bitmap = bitmap, contentDescription = "Foto Evidencia", modifier = Modifier.size(90.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+                            }
+                        } else {
+                            Card(
+                                modifier = Modifier.size(90.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6))
+                            ) {
+                                Column(modifier = Modifier.fillMaxSize().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                    Icon(Icons.Default.Description, contentDescription = "Documento", tint = Color(0xFF4B5563), modifier = Modifier.size(32.dp))
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(text = ev.nombre, fontSize = 10.sp, color = Color(0xFF4B5563), maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+                                }
+                            }
                         }
                     }
                 }
@@ -145,39 +129,47 @@ fun DetalleSiniestroPanel(
             Text("Comentario para el usuario", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             OutlinedTextField(
                 value = comentario,
-                onValueChange = { comentario = it },
+                onValueChange = {
+                    comentario = it
+                    if (it.isNotBlank()) errorComentario = false
+                },
                 minLines = 3,
+                isError = errorComentario,
+                supportingText = {
+                    if (errorComentario) {
+                        Text("El comentario no puede estar vacío para enviarlo", color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // BOTÓN ENVIAR COMENTARIO (Valida obligatoriamente que no esté vacío)
                 OutlinedButton(
-                    onClick = { onGuardar(estado, comentario) },
+                    onClick = {
+                        if (comentario.isBlank()) {
+                            errorComentario = true
+                        } else {
+                            errorComentario = false
+                            onEnviarComentario(comentario)
+                            mensajeExitoComentario = true
+                        }
+                    },
                     modifier = Modifier.weight(1f)
                 ) { Text("Enviar comentario", fontSize = 12.sp) }
+
                 OutlinedButton(
                     onClick = { onSolicitarDocumento("Presupuesto de reparación") },
                     modifier = Modifier.weight(1f)
                 ) { Text("Solicitar documento", fontSize = 12.sp) }
             }
 
-            Button(
-                onClick = { onGuardar(estado, comentario) },
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) { Text("Guardar cambios") }
-
-
-            mensaje?.let {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFDCFCE7), shape = RoundedCornerShape(8.dp))
-                        .padding(12.dp)
-                ) {
+            if (mensajeExitoComentario || mensaje != null) {
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFFDCFCE7), shape = RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Verde, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Comentario enviado y guardado correctamente", color = Verde, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Guardado correctamente", color = Verde, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

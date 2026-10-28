@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import cl.duocuc.miregistro.model.DetalleSiniestro
 import cl.duocuc.miregistro.model.Documento
+import cl.duocuc.miregistro.model.EvidenciaArchivo
 import cl.duocuc.miregistro.model.ResumenPanel
 import cl.duocuc.miregistro.model.SiniestroResumen
 import cl.duocuc.miregistro.model.Usuario
@@ -17,7 +18,7 @@ class UsuarioDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_BD = "seguimiento_siniestros.db"
-        private const val VERSION_BD = 6
+        private const val VERSION_BD = 7
 
         private const val TABLA_ROLES = "roles"
         private const val ROL_ID = "id_rol"
@@ -59,6 +60,8 @@ class UsuarioDbHelper(context: Context) :
         private const val TABLA_EVIDENCIA = "evidencia"
         private const val EVI_ID = "id_evidencia"
         private const val EVI_SINIESTRO = "numero_siniestro"
+        private const val EVI_NOMBRE = "nombre_archivo"
+        private const val EVI_ES_IMAGEN = "es_imagen"
         private const val EVI_IMAGEN = "imagen_blob"
         private const val EVI_FECHA = "fecha_subida"
 
@@ -108,6 +111,8 @@ class UsuarioDbHelper(context: Context) :
             "CREATE TABLE $TABLA_EVIDENCIA (" +
                     "$EVI_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "$EVI_SINIESTRO TEXT NOT NULL REFERENCES $TABLA_SINIESTROS($SIN_NUMERO), " +
+                    "$EVI_NOMBRE TEXT NOT NULL, " +
+                    "$EVI_ES_IMAGEN INTEGER NOT NULL, " +
                     "$EVI_IMAGEN BLOB NOT NULL, " +
                     "$EVI_FECHA DATETIME DEFAULT CURRENT_TIMESTAMP)"
 
@@ -221,22 +226,30 @@ class UsuarioDbHelper(context: Context) :
         }
     }
 
-    fun guardarEvidencia(numeroSiniestro: String, imagenBlob: ByteArray): Boolean {
+    fun guardarEvidencia(numeroSiniestro: String, nombre: String, esImagen: Boolean, imagenBlob: ByteArray): Boolean {
         val valores = ContentValues().apply {
             put(EVI_SINIESTRO, numeroSiniestro)
+            put(EVI_NOMBRE, nombre)
+            put(EVI_ES_IMAGEN, if (esImagen) 1 else 0)
             put(EVI_IMAGEN, imagenBlob)
         }
         return writableDatabase.insert(TABLA_EVIDENCIA, null, valores) != -1L
     }
 
-    fun obtenerEvidencias(numeroSiniestro: String): List<ByteArray> {
-        val lista = mutableListOf<ByteArray>()
+    fun obtenerEvidencias(numeroSiniestro: String): List<EvidenciaArchivo> {
+        val lista = mutableListOf<EvidenciaArchivo>()
         readableDatabase.rawQuery(
-            "SELECT $EVI_IMAGEN FROM $TABLA_EVIDENCIA WHERE $EVI_SINIESTRO = ?",
+            "SELECT $EVI_NOMBRE, $EVI_ES_IMAGEN, $EVI_IMAGEN FROM $TABLA_EVIDENCIA WHERE $EVI_SINIESTRO = ?",
             arrayOf(numeroSiniestro)
         ).use { cursor ->
             while (cursor.moveToNext()) {
-                lista.add(cursor.getBlob(0))
+                lista.add(
+                    EvidenciaArchivo(
+                        nombre = cursor.getString(0),
+                        esImagen = cursor.getInt(1) == 1,
+                        bytes = cursor.getBlob(2)
+                    )
+                )
             }
         }
         return lista
@@ -347,8 +360,15 @@ class UsuarioDbHelper(context: Context) :
         }
     }
 
-    fun actualizarSiniestro(numero: String, estado: String, comentario: String): Boolean {
-        val valores = ContentValues().apply { put(SIN_ESTADO, estado); put(SIN_COMENTARIO, comentario) }
+    // Actualiza solo el estado (usado por el botón Guardar cambios)
+    fun actualizarEstadoSiniestro(numero: String, estado: String): Boolean {
+        val valores = ContentValues().apply { put(SIN_ESTADO, estado) }
+        return writableDatabase.update(TABLA_SINIESTROS, valores, "$SIN_NUMERO = ?", arrayOf(numero)) > 0
+    }
+
+    // Actualiza solo el comentario (usado por el botón Enviar comentario)
+    fun actualizarComentarioSiniestro(numero: String, comentario: String): Boolean {
+        val valores = ContentValues().apply { put(SIN_COMENTARIO, comentario) }
         return writableDatabase.update(TABLA_SINIESTROS, valores, "$SIN_NUMERO = ?", arrayOf(numero)) > 0
     }
 
@@ -403,7 +423,6 @@ class UsuarioDbHelper(context: Context) :
         }
         return siniestro
     }
-
 
     fun buscarSiniestroSeguro(numero: String, idUsuario: Long): cl.duocuc.miregistro.model.Siniestro? {
         val db = readableDatabase

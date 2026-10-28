@@ -62,7 +62,6 @@ fun DetalleSiniestroScreen(
                     }
                 },
                 actions = {
-
                     Spacer(modifier = Modifier.width(48.dp))
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colorFondo)
@@ -134,7 +133,6 @@ fun DetalleSiniestroScreen(
                         fontSize = 11.sp,
                         color = colorTextSecundario
                     )
-
 
                     if (siniestro.comentario.isNotBlank()) {
                         Spacer(modifier = Modifier.height(12.dp))
@@ -230,7 +228,7 @@ fun DetalleSiniestroScreen(
                                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color.White))
                                 }
                             }
-                            // Corrección del error de sintaxis aquí
+                            // Sintaxis corregida correctamente aquí
                             if (index < etapas.size - 1) {
                                 Box(modifier = Modifier.width(2.dp).weight(1f).background(colorLinea))
                             }

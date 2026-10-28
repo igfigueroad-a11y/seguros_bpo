@@ -11,4 +11,5 @@ data class Siniestro(
     val etapaNombre: String,
     val fechaUltimaActualizacion: String,
     val comentario: String = ""
+
 )
