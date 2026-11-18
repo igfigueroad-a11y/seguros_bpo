@@ -21,7 +21,6 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
     private val _mensajeError = MutableStateFlow<String?>(null)
     val mensajeError: StateFlow<String?> = _mensajeError.asStateFlow()
 
-    // 1. Función para validar la complejidad de la contraseña
     private fun esContrasenaValida(password: String): Boolean {
         if (password.length < 8) return false
         if (!password.any { it.isUpperCase() }) return false
@@ -30,15 +29,33 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
         return true
     }
 
-    fun registrar(nombre: String, rut: String, correo: String, contrasena: String, resp1: String, resp2: String, resp3: String) {
-
-        if (nombre.isBlank() || rut.isBlank() || correo.isBlank() || contrasena.isBlank() ||
-            resp1.isBlank() || resp2.isBlank() || resp3.isBlank()) {
-            _mensajeError.value = "Todos los campos y preguntas son obligatorios"
+    fun registrar(
+        nombre: String,
+        rut: String,
+        correo: String,
+        contrasena: String,
+        preg1: String,
+        resp1: String,
+        preg2: String,
+        resp2: String,
+        preg3: String,
+        resp3: String
+    ) {
+        if (nombre.isBlank() || rut.isBlank() || correo.isBlank() || contrasena.isBlank()) {
+            _mensajeError.value = "Completa todos los datos personales"
             return
         }
 
-        // 2. Aplicamos la validación antes de guardar
+        if (preg1.isBlank() || preg2.isBlank() || preg3.isBlank()) {
+            _mensajeError.value = "Debes seleccionar las 3 preguntas de seguridad"
+            return
+        }
+
+        if (resp1.isBlank() || resp2.isBlank() || resp3.isBlank()) {
+            _mensajeError.value = "Debes responder las 3 preguntas de seguridad"
+            return
+        }
+
         if (!esContrasenaValida(contrasena)) {
             _mensajeError.value = "La contraseña debe tener al menos 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial"
             return
@@ -46,7 +63,18 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             val exito = withContext(Dispatchers.IO) {
-                db.registrarUsuario(nombre, rut, correo, contrasena, resp1, resp2, resp3)
+                db.registrarUsuario(
+                    nombre = nombre,
+                    rut = rut,
+                    correo = correo,
+                    claveTextoPlano = contrasena,
+                    preg1 = preg1,
+                    resp1 = resp1,
+                    preg2 = preg2,
+                    resp2 = resp2,
+                    preg3 = preg3,
+                    resp3 = resp3
+                )
             }
 
             if (exito) {

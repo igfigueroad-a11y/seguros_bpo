@@ -1,5 +1,7 @@
 package cl.duocuc.miregistro.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,19 +11,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.ui.unit.dp
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,15 +35,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.R
+import cl.duocuc.miregistro.ui.components.AzulFondoSuave
+import cl.duocuc.miregistro.ui.components.AzulPrincipal
+import cl.duocuc.miregistro.ui.components.BloquePreguntaSeguridad
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
-import cl.duocuc.miregistro.ui.components.BotonSecundario
 import cl.duocuc.miregistro.ui.components.CampoContrasena
 import cl.duocuc.miregistro.ui.components.CampoTexto
 import cl.duocuc.miregistro.ui.theme.Dimens
-import cl.duocuc.miregistro.ui.theme.TextoClaro
 import cl.duocuc.miregistro.viewmodel.RegistroViewModel
 
 @Composable
@@ -59,6 +62,9 @@ fun RegistroScreen(
     var contrasenaVisible by remember { mutableStateOf(false) }
 
     var mostrarPreguntas by remember { mutableStateOf(false) }
+    var pregunta1 by remember { mutableStateOf("") }
+    var pregunta2 by remember { mutableStateOf("") }
+    var pregunta3 by remember { mutableStateOf("") }
     var respuesta1 by remember { mutableStateOf("") }
     var respuesta2 by remember { mutableStateOf("") }
     var respuesta3 by remember { mutableStateOf("") }
@@ -76,7 +82,7 @@ fun RegistroScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(AzulFondoSuave),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -141,21 +147,26 @@ fun RegistroScreen(
                         visible = contrasenaVisible,
                         onAlternarVisible = { contrasenaVisible = !contrasenaVisible }
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
 
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedButton(
                         onClick = { mostrarPreguntas = !mostrarPreguntas },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        border = BorderStroke(1.dp, AzulPrincipal),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AzulPrincipal)
                     ) {
-                        Text(if (mostrarPreguntas) "Ocultar preguntas de seguridad" else "Configurar preguntas de seguridad")
+                        Text(
+                            if (mostrarPreguntas) "Ocultar preguntas de seguridad"
+                            else "Configurar preguntas de seguridad"
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             imageVector = if (mostrarPreguntas) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = AzulPrincipal
                         )
                     }
-
 
                     AnimatedVisibility(visible = mostrarPreguntas) {
                         Column(
@@ -163,54 +174,66 @@ fun RegistroScreen(
                             modifier = Modifier.padding(top = 8.dp)
                         ) {
                             Text(
-                                text = "Responde estas 3 preguntas. Son obligatorias y te servirán para recuperar el acceso a tu cuenta si olvidas tu contraseña.",
+                                text = "Elige 3 preguntas de la lista y respóndelas. Son obligatorias para recuperar tu acceso si olvidas tu contraseña.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = AzulPrincipal,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
                             )
 
-                            CampoTexto(
-                                valor = respuesta1,
-                                onValorCambia = { respuesta1 = it },
-                                etiqueta = "¿Cuál es el nombre de tu primera mascota?",
-                                icono = R.drawable.ic_candado
+                            BloquePreguntaSeguridad(
+                                numeroPregunta = 1,
+                                preguntaSeleccionada = pregunta1,
+                                preguntasExcluidas = listOf(pregunta2, pregunta3).filter { it.isNotBlank() },
+                                onPreguntaSelected = { pregunta1 = it },
+                                respuesta = respuesta1,
+                                onRespuestaChange = { respuesta1 = it }
                             )
 
-                            CampoTexto(
-                                valor = respuesta2,
-                                onValorCambia = { respuesta2 = it },
-                                etiqueta = "¿En qué ciudad naciste?",
-                                icono = R.drawable.ic_candado
+                            BloquePreguntaSeguridad(
+                                numeroPregunta = 2,
+                                preguntaSeleccionada = pregunta2,
+                                preguntasExcluidas = listOf(pregunta1, pregunta3).filter { it.isNotBlank() },
+                                onPreguntaSelected = { pregunta2 = it },
+                                respuesta = respuesta2,
+                                onRespuestaChange = { respuesta2 = it }
                             )
 
-                            CampoTexto(
-                                valor = respuesta3,
-                                onValorCambia = { respuesta3 = it },
-                                etiqueta = "¿Cuál es tu película favorita?",
-                                icono = R.drawable.ic_candado
+                            BloquePreguntaSeguridad(
+                                numeroPregunta = 3,
+                                preguntaSeleccionada = pregunta3,
+                                preguntasExcluidas = listOf(pregunta1, pregunta2).filter { it.isNotBlank() },
+                                onPreguntaSelected = { pregunta3 = it },
+                                respuesta = respuesta3,
+                                onRespuestaChange = { respuesta3 = it }
                             )
                         }
                     }
-
-
-
-
-
 
                     mensajeError?.let {
                         Text(
                             text = it,
                             color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
                         )
                     }
 
                     BotonPrincipal(
                         texto = "Registrarme",
                         onClick = {
-
-                            viewModel.registrar(nombre, rut, correo, contrasena, respuesta1, respuesta2, respuesta3)
+                            viewModel.registrar(
+                                nombre = nombre,
+                                rut = rut,
+                                correo = correo,
+                                contrasena = contrasena,
+                                preg1 = pregunta1,
+                                resp1 = respuesta1,
+                                preg2 = pregunta2,
+                                resp2 = respuesta2,
+                                preg3 = pregunta3,
+                                resp3 = respuesta3
+                            )
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -218,7 +241,7 @@ fun RegistroScreen(
                     TextButton(onClick = onNavegarLogin) {
                         Text(
                             text = "Ya tengo una cuenta · Iniciar sesión",
-                            color = MaterialTheme.colorScheme.primary,
+                            color = AzulPrincipal,
                             style = MaterialTheme.typography.labelLarge
                         )
                     }

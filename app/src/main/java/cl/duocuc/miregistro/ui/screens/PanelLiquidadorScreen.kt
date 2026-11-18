@@ -2,12 +2,27 @@ package cl.duocuc.miregistro.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.model.SiniestroResumen
+import cl.duocuc.miregistro.ui.theme.Primario
 import cl.duocuc.miregistro.viewmodel.PanelLiquidadorViewModel
 
 @Composable
@@ -30,7 +46,7 @@ fun PanelLiquidadorScreen(
 
     if (ui.cargando) {
         Column(Modifier.fillMaxSize(), Arrangement.Center, Alignment.CenterHorizontally) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = Primario)
         }
         return
     }
@@ -58,7 +74,7 @@ fun PanelLiquidadorScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TarjetaResumen("Siniestros asignados", ui.resumen.asignados, Color(0xFF3B1FD1), Modifier.weight(1f))
+                    TarjetaResumen("Siniestros asignados", ui.resumen.asignados, Primario, Modifier.weight(1f))
                     TarjetaResumen("En evaluación", ui.resumen.enEvaluacion, Color(0xFFF59E0B), Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -68,12 +84,22 @@ fun PanelLiquidadorScreen(
             }
         }
         item { Text("Siniestros asignados", fontWeight = FontWeight.Bold) }
-        items(ui.siniestros, key = { it.numero }) { s ->
-            FilaSiniestro(
-                s = s,
-                seleccionada = s.numero == ui.seleccionado?.numero,
-                onClick = viewModel::seleccionar
-            )
+        if (ui.siniestros.isEmpty()) {
+            item {
+                Text(
+                    text = "No tienes siniestros asignados por el administrador.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            items(ui.siniestros, key = { it.numero }) { s ->
+                FilaSiniestro(
+                    s = s,
+                    seleccionada = s.numero == ui.seleccionado?.numero,
+                    onClick = viewModel::seleccionar
+                )
+            }
         }
         ui.seleccionado?.let { detalle ->
             item {
@@ -115,7 +141,7 @@ private fun FilaSiniestro(
         modifier = Modifier.fillMaxWidth().clickable { onClick(s.numero) },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (seleccionada) Color(0xFFE8F0FE) else Color.White
+            containerColor = if (seleccionada) Color(0xFFE3F2FD) else Color.White
         )
     ) {
         Row(
@@ -124,7 +150,7 @@ private fun FilaSiniestro(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(Modifier.weight(1f)) {
-                Text(s.numero, fontWeight = FontWeight.Bold, color = Color(0xFF3B1FD1))
+                Text(s.numero, fontWeight = FontWeight.Bold, color = Primario)
                 Text(s.cliente, fontSize = 13.sp)
                 Text("${s.tipo} · ${s.fecha}", fontSize = 12.sp)
             }
@@ -137,7 +163,7 @@ private fun FilaSiniestro(
 private fun EstadoChip(estado: String) {
     val (fondo, texto) = when (estado) {
         "En evaluación" -> Color(0xFFFEF3C7) to Color(0xFFB45309)
-        "En liquidación" -> Color(0xFFE0E7FF) to Color(0xFF3730A3)
+        "En liquidación" -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
         "Cerrado" -> Color(0xFFDCFCE7) to Color(0xFF15803D)
         else -> Color(0xFFF3F4F6) to Color(0xFF4B5563)
     }

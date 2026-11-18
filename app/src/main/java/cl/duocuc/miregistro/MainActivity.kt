@@ -2,6 +2,7 @@ package cl.duocuc.miregistro
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import  cl.duocuc.miregistro.data.AjustesTema
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +17,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // BORRAMOS enableEdgeToEdge() para evitar la pantalla negra en el emulador
-
+        AjustesTema.cargar(this)
         setContent {
             MiRegistroTheme(dynamicColor = false) {
                 // Surface fuerza a renderizar el color de fondo de inmediato

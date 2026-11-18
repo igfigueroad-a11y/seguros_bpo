@@ -43,18 +43,21 @@ class PanelLiquidadorViewModel(app: Application) : AndroidViewModel(app) {
         refrescar(numero, null)
     }
 
-    // Guarda únicamente el cambio de estado (botón Guardar cambios de estado)
     fun guardarEstado(estado: String) {
         val numero = _ui.value.seleccionado?.numero ?: return
         viewModelScope.launch {
             val ok = withContext(Dispatchers.IO) {
                 dbHelper.actualizarEstadoSiniestro(numero, estado)
             }
-            refrescar(numero, if (ok) "Estado actualizado correctamente" else "No se pudo actualizar el estado")
+            val msg = if (ok) {
+                "Estado actualizado correctamente"
+            } else {
+                "No se permite retroceder a un estado anterior"
+            }
+            refrescar(numero, msg)
         }
     }
 
-    // Guarda únicamente el comentario (botón Enviar comentario)
     fun guardarComentario(comentario: String) {
         val numero = _ui.value.seleccionado?.numero ?: return
         viewModelScope.launch {

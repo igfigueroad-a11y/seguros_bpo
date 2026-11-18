@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -17,8 +21,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.ui.screens.AdjuntarEvidenciaScreen
+import cl.duocuc.miregistro.ui.screens.AdminPanelScreen
 import cl.duocuc.miregistro.ui.screens.ConsultaSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.DetalleSiniestroScreen
+import cl.duocuc.miregistro.ui.screens.EditarPerfilScreen
+import cl.duocuc.miregistro.ui.screens.InicioAseguradoScreen
 import cl.duocuc.miregistro.ui.screens.LoginScreen
 import cl.duocuc.miregistro.ui.screens.NuevaContrasenaScreen
 import cl.duocuc.miregistro.ui.screens.PanelLiquidadorScreen
@@ -29,6 +36,7 @@ import cl.duocuc.miregistro.ui.screens.SiniestroCerradoScreen
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
+    var bienvenidaMostrada by rememberSaveable { mutableStateOf(false) }
 
     NavHost(
         navController = navController,
@@ -50,7 +58,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         composable("login") {
             LoginScreen(
                 onLoginExitoso = { usuario ->
+                    bienvenidaMostrada = false
                     val destino = when (usuario.rolNombre) {
+                        "ADMIN" -> "admin/${usuario.id}"
                         "LIQUIDADOR" -> "panel/${usuario.id}"
                         "ASEGURADO" -> "consulta/${usuario.id}"
                         else -> "home_temporal"
@@ -91,6 +101,22 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
 
         composable(
+            route = "admin/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { entry ->
+            val id = entry.arguments?.getLong("id") ?: 0L
+            AdminPanelScreen(
+                idAdmin = id,
+                onCerrarSesion = {
+                    bienvenidaMostrada = false
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(
             route = "panel/{id}",
             arguments = listOf(navArgument("id") { type = NavType.LongType })
         ) { entry ->
@@ -98,6 +124,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             PanelLiquidadorScreen(
                 idLiquidador = id,
                 onCerrarSesion = {
+                    bienvenidaMostrada = false
                     navController.navigate("login") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -111,13 +138,80 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         ) { entry ->
             val idUsuario = entry.arguments?.getLong("id") ?: 0L
             ConsultaSiniestroScreen(
+                idUsuario = idUsuario,
+                mostrarBienvenida = !bienvenidaMostrada,
+                onBienvenidaMostrada = { bienvenidaMostrada = true },
                 onSiniestroEncontrado = { numero ->
                     navController.navigate("estado/$numero/$idUsuario")
                 },
-
+                onVerMisSiniestros = {
+                    navController.navigate("inicio/$idUsuario") {
+                        launchSingleTop = true
+                    }
+                },
+                onEditarPerfil = {
+                    navController.navigate("editar_perfil/$idUsuario") {
+                        launchSingleTop = true
+                    }
+                },
                 onCerrarSesion = {
+                    bienvenidaMostrada = false
                     navController.navigate("login") {
-                        popUpTo("login") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "editar_perfil/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { entry ->
+            val idUsuario = entry.arguments?.getLong("id") ?: 0L
+            EditarPerfilScreen(
+                idUsuario = idUsuario,
+                onVolver = { navController.popBackStack() },
+                onVerMisSiniestros = {
+                    navController.navigate("inicio/$idUsuario") {
+                        launchSingleTop = true
+                    }
+                },
+                onCerrarSesion = {
+                    bienvenidaMostrada = false
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "inicio/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { entry ->
+            val id = entry.arguments?.getLong("id") ?: 0L
+            InicioAseguradoScreen(
+                idUsuario = id,
+                onConsultarSiniestro = {
+                    navController.navigate("consulta/$id") {
+                        launchSingleTop = true
+                    }
+                },
+                onEditarPerfil = {
+                    navController.navigate("editar_perfil/$id") {
+                        launchSingleTop = true
+                    }
+                },
+                onAdjuntarDocumento = { numero ->
+                    navController.navigate("evidencia/$numero")
+                },
+                onVerDetalle = { numero ->
+                    navController.navigate("estado/$numero/$id")
+                },
+                onCerrarSesion = {
+                    bienvenidaMostrada = false
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -134,7 +228,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val idUsuario = entry.arguments?.getLong("id") ?: 0L
             val contexto = LocalContext.current
             val db = UsuarioDbHelper(contexto)
-
 
             val siniestroReal = db.buscarSiniestroSeguro(numeroIngresado, idUsuario)
 
@@ -154,7 +247,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     )
                 }
             } else {
-
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Siniestro no encontrado o acceso denegado", fontWeight = FontWeight.Bold)
