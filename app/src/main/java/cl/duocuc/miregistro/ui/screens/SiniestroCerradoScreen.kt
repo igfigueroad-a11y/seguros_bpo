@@ -26,11 +26,11 @@ fun SiniestroCerradoScreen(
     onVolver: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // 1. EL COLOR PRINCIPAL (Botón, Título "CERRADO", Ícono grande)
+
     val colorPrincipal = MaterialTheme.colorScheme.primary
 
-    // 2. EL COLOR DE LOS TICKETS (Solo para los 4 checks de la lista)
-    val colorTickets = Color(0xFF15803D) // Verde clásico y limpio
+
+    val colorTickets = Color(0xFF15803D)
 
     val colorTextPrincipal = MaterialTheme.colorScheme.onBackground
     val colorTextSecundario = MaterialTheme.colorScheme.onSurfaceVariant
@@ -67,7 +67,7 @@ fun SiniestroCerradoScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ícono central usando el color principal
+
             Box(
                 modifier = Modifier
                     .size(100.dp)
@@ -78,7 +78,7 @@ fun SiniestroCerradoScreen(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = colorPrincipal, // <-- Aplica color principal
+                    tint = colorPrincipal,
                     modifier = Modifier.size(64.dp)
                 )
             }
@@ -87,7 +87,7 @@ fun SiniestroCerradoScreen(
 
             Text(
                 text = "CERRADO",
-                color = colorPrincipal, // <-- Aplica color principal
+                color = colorPrincipal,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 2.sp,
                 fontSize = 20.sp
@@ -120,7 +120,7 @@ fun SiniestroCerradoScreen(
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
                                 contentDescription = null,
-                                tint = colorTickets, // <-- AQUÍ SE APLICA EL VERDE SOLO A LOS 4 TICKETS
+                                tint = colorTickets,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
@@ -152,7 +152,7 @@ fun SiniestroCerradoScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal) // <-- Aplica color principal
+                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
             ) {
                 Text("Descargar Certificado Completo", fontWeight = FontWeight.Bold)
             }
