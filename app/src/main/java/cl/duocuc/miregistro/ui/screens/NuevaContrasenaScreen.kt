@@ -13,15 +13,7 @@ import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
 import cl.duocuc.miregistro.ui.components.CampoContrasena
 import cl.duocuc.miregistro.ui.theme.Dimens
-
-// Función de validación (fuera del Composable principal)
-private fun esContrasenaValida(password: String): Boolean {
-    val longitudValida = password.length >= 8
-    val tieneMayuscula = password.any { it.isUpperCase() }
-    val tieneNumero = password.any { it.isDigit() }
-    val tieneEspecial = password.any { !it.isLetterOrDigit() }
-    return longitudValida && tieneMayuscula && tieneNumero && tieneEspecial
-}
+import cl.duocuc.miregistro.utils.Validaciones
 
 @Composable
 fun NuevaContrasenaScreen(
@@ -92,7 +84,7 @@ fun NuevaContrasenaScreen(
                             mensajeError = "Ambos campos son obligatorios"
                         } else if (nuevaContrasena != confirmarContrasena) {
                             mensajeError = "Las contraseñas no coinciden"
-                        } else if (!esContrasenaValida(nuevaContrasena)) {
+                        } else if (!Validaciones.esContrasenaValida(nuevaContrasena)) {
                             // Se ejecuta si la contraseña ingresada no cumple las reglas
                             mensajeError = "La contraseña debe tener al menos 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial"
                         } else {

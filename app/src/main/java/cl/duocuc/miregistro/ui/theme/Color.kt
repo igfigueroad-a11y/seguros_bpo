@@ -3,7 +3,7 @@ package cl.duocuc.miregistro.ui.theme
 import androidx.compose.ui.graphics.Color
 
 //colores de la app (diseño propio)
-val Primario = Color(0xFF5B3FD9)
+val Primario = Color(0xFFD20F84)
 val PrimarioOscuro = Color(0xFF3A22A8)
 val PrimarioClaro = Color(0xFFC9BEFF)
 val Secundario = Color(0xFF00A6A6)
