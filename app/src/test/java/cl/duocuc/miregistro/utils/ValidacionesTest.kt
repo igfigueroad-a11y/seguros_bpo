@@ -65,4 +65,14 @@ class ValidacionesTest {
 
         assertTrue(resultado)
     }
+
+    @Test
+    fun numeroDeSiniestroEnBlanco (){
+        val siniestro = ""
+
+        val error = Validaciones.validarNumeroSiniestro(siniestro)
+
+        assertEquals("Ingresa el número de siniestro",error)
+    }
+
 }
