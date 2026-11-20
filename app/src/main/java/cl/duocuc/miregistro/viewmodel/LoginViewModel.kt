@@ -3,33 +3,41 @@ package cl.duocuc.miregistro.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
 import cl.duocuc.miregistro.R
-import cl.duocuc.miregistro.data.SesionPreferencias
 import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.model.LoginUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = UsuarioDbHelper(application)
-    private val sesion = SesionPreferencias(application)
+    private val dbHelper = UsuarioDbHelper(application)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    fun onCorreoCambia(valor: String) {
-        _uiState.update { it.copy(correo = valor, errorCorreo = null, errorGeneral = null) }
+    fun onCorreoCambia(nuevoCorreo: String) {
+        _uiState.update {
+            it.copy(
+                correo = nuevoCorreo,
+                errorCorreo = null,
+                errorGeneral = null,
+                mensajeBloqueo = null
+            )
+        }
     }
 
-    fun onContrasenaCambia(valor: String) {
-        _uiState.update { it.copy(contrasena = valor, errorContrasena = null, errorGeneral = null) }
+    fun onContrasenaCambia(nuevaContrasena: String) {
+        _uiState.update {
+            it.copy(
+                contrasena = nuevaContrasena,
+                errorContrasena = null,
+                errorGeneral = null,
+                mensajeBloqueo = null
+            )
+        }
     }
 
     fun onAlternarVisibilidad() {
@@ -37,52 +45,51 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onIngresar() {
-        val estado = _uiState.value
+        val estadoActual = _uiState.value
+        val correoLimpio = estadoActual.correo.trim()
+        val clave = estadoActual.contrasena
 
-        val errorCorreo = when {
-            estado.correo.isBlank() -> R.string.login_error_correo_vacio
-            !Patterns.EMAIL_ADDRESS.matcher(estado.correo.trim()).matches() ->
-                R.string.login_error_correo_invalido
-            else -> null
+        if (correoLimpio.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(correoLimpio).matches()) {
+            _uiState.update { it.copy(errorCorreo = R.string.error_correo_invalido) }
+            return
         }
-        val errorContrasena =
-            if (estado.contrasena.isEmpty()) R.string.login_error_contrasena_vacia else null
 
-        if (errorCorreo != null || errorContrasena != null) {
+        if (clave.isBlank()) {
+            _uiState.update { it.copy(errorContrasena = R.string.error_contrasena_vacia) }
+            return
+        }
+
+        _uiState.update { it.copy(cargando = true, errorGeneral = null, mensajeBloqueo = null) }
+
+        val bloqueo = dbHelper.verificarEstadoRegistro(correoLimpio)
+        if (bloqueo != null) {
             _uiState.update {
-                it.copy(errorCorreo = errorCorreo, errorContrasena = errorContrasena)
+                it.copy(
+                    cargando = false,
+                    mensajeBloqueo = bloqueo
+                )
             }
             return
         }
 
-        _uiState.update { it.copy(cargando = true, errorGeneral = null) }
-
-        viewModelScope.launch {
-            val resultado = runCatching {
-                withContext(Dispatchers.IO) {
-                    db.validarLogin(estado.correo, estado.contrasena)
-                }
+        val usuarioAutenticado = dbHelper.iniciarSesion(correoLimpio, clave)
+        if (usuarioAutenticado != null) {
+            _uiState.update {
+                it.copy(
+                    cargando = false,
+                    usuario = usuarioAutenticado
+                )
             }
-            resultado
-                .onSuccess { usuario ->
-                    if (usuario != null) {
-                        sesion.guardar(usuario.id, usuario.rolId)
-                        _uiState.update { it.copy(cargando = false, usuario = usuario) }
-                    } else {
-                        _uiState.update {
-                            it.copy(cargando = false, errorGeneral = R.string.login_error_credenciales)
-                        }
-                    }
-                }
-                .onFailure {
-                    _uiState.update {
-                        it.copy(cargando = false, errorGeneral = R.string.login_error_generico)
-                    }
-                }
+        } else {
+            _uiState.update {
+                it.copy(
+                    cargando = false,
+                    errorGeneral = R.string.error_credenciales
+                )
+            }
         }
     }
 
-    // La pantalla lo llama después de navegar, para no repetir el ingreso
     fun onLoginConsumido() {
         _uiState.update { it.copy(usuario = null) }
     }

@@ -1,10 +1,10 @@
 package cl.duocuc.miregistro.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,7 @@ import cl.duocuc.miregistro.ui.components.BloquePreguntaSeguridad
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
 import cl.duocuc.miregistro.ui.components.CampoContrasena
 import cl.duocuc.miregistro.ui.components.CampoTexto
+import cl.duocuc.miregistro.ui.components.EncabezadoEmpresa
 import cl.duocuc.miregistro.ui.theme.Dimens
 import cl.duocuc.miregistro.viewmodel.RegistroViewModel
 
@@ -55,6 +57,8 @@ fun RegistroScreen(
     modifier: Modifier = Modifier,
     viewModel: RegistroViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+
     var nombre by remember { mutableStateOf("") }
     var rut by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
@@ -74,21 +78,27 @@ fun RegistroScreen(
 
     LaunchedEffect(registroExitoso) {
         if (registroExitoso) {
+            Toast.makeText(
+                context,
+                "Solicitud enviada. Un analista revisará tus datos para aprobar tu cuenta.",
+                Toast.LENGTH_LONG
+            ).show()
             viewModel.limpiarEstado()
             onRegistroExitoso()
         }
     }
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(AzulFondoSuave),
-        contentAlignment = Alignment.Center
+            .background(AzulFondoSuave)
+            .verticalScroll(rememberScrollState())
     ) {
+        EncabezadoEmpresa(onVolver = onNavegarLogin)
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
                 .padding(Dimens.espacioPantalla)
         ) {
             Card(
@@ -110,7 +120,7 @@ fun RegistroScreen(
                     )
 
                     Text(
-                        text = "Regístrate para gestionar tus siniestros",
+                        text = "Tu cuenta quedará sujeta a aprobación de un analista antes de iniciar sesión",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -220,7 +230,7 @@ fun RegistroScreen(
                     }
 
                     BotonPrincipal(
-                        texto = "Registrarme",
+                        texto = "Solicitar registro",
                         onClick = {
                             viewModel.registrar(
                                 nombre = nombre,

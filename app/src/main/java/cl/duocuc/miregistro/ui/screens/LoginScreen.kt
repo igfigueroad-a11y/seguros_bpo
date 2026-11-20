@@ -1,9 +1,7 @@
 package cl.duocuc.miregistro.ui.screens
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,17 +24,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.R
 import cl.duocuc.miregistro.model.LoginUiState
 import cl.duocuc.miregistro.model.Usuario
+import cl.duocuc.miregistro.ui.components.AzulFondoSuave
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
 import cl.duocuc.miregistro.ui.components.CampoContrasena
 import cl.duocuc.miregistro.ui.components.CampoTexto
+import cl.duocuc.miregistro.ui.components.EncabezadoEmpresa
 import cl.duocuc.miregistro.ui.theme.Dimens
-import cl.duocuc.miregistro.ui.theme.MiRegistroTheme
 import cl.duocuc.miregistro.viewmodel.LoginViewModel
 
 @Composable
@@ -79,16 +77,17 @@ private fun LoginContenido(
     onNavegarRegistro: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
+            .background(AzulFondoSuave)
+            .verticalScroll(rememberScrollState())
     ) {
+        EncabezadoEmpresa()
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
                 .padding(Dimens.espacioPantalla)
         ) {
             Card(
@@ -103,9 +102,7 @@ private fun LoginContenido(
             ) {
                 Column(
                     modifier = Modifier.padding(Dimens.espacioGrande),
-                    verticalArrangement = Arrangement.spacedBy(
-                        Dimens.espacioMedio
-                    ),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.espacioMedio),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -122,32 +119,24 @@ private fun LoginContenido(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(
-                        modifier = Modifier.height(Dimens.espacioChico)
-                    )
+                    Spacer(modifier = Modifier.height(Dimens.espacioChico))
 
                     CampoTexto(
                         valor = estado.correo,
                         onValorCambia = onCorreoCambia,
                         etiqueta = stringResource(R.string.login_correo),
                         icono = R.drawable.ic_correo,
-                        error = estado.errorCorreo?.let {
-                            stringResource(it)
-                        },
+                        error = estado.errorCorreo?.let { stringResource(it) },
                         tipoTeclado = KeyboardType.Email
                     )
 
                     CampoContrasena(
                         valor = estado.contrasena,
                         onValorCambia = onContrasenaCambia,
-                        etiqueta = stringResource(
-                            R.string.login_contrasena
-                        ),
+                        etiqueta = stringResource(R.string.login_contrasena),
                         visible = estado.contrasenaVisible,
                         onAlternarVisible = onAlternarVisibilidad,
-                        error = estado.errorContrasena?.let {
-                            stringResource(it)
-                        }
+                        error = estado.errorContrasena?.let { stringResource(it) }
                     )
 
                     TextButton(
@@ -158,6 +147,15 @@ private fun LoginContenido(
                             text = "¿Olvidaste tu contraseña?",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
+                    estado.mensajeBloqueo?.let { aviso ->
+                        Text(
+                            text = aviso,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
                         )
                     }
 
@@ -188,28 +186,11 @@ private fun LoginContenido(
                         )
                     }
 
-
                     if (estado.cargando) {
                         CircularProgressIndicator()
                     }
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun LoginPreview() {
-    MiRegistroTheme {
-        LoginContenido(
-            estado = LoginUiState(),
-            onCorreoCambia = {},
-            onContrasenaCambia = {},
-            onAlternarVisibilidad = {},
-            onIngresar = {},
-            onNavegarRecuperar = {},
-            onNavegarRegistro = {} //
-        )
     }
 }

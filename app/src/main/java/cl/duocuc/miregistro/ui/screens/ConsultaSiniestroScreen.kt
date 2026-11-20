@@ -91,7 +91,7 @@ fun ConsultaSiniestroScreen(
         containerColor = FondoClaro,
         topBar = {
             MiRegistroTopBar(
-                titulo = "MiRegistro",
+                titulo = "Seguro BPO",
                 usuario = usuario,
                 mostrarVolver = false,
                 onVerMisSiniestros = onVerMisSiniestros,

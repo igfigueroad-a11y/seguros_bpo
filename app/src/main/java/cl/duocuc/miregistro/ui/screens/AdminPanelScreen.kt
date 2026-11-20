@@ -2,9 +2,9 @@ package cl.duocuc.miregistro.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,24 +18,37 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AssignmentInd
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,14 +67,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cl.duocuc.miregistro.data.SiniestroAdmin
 import cl.duocuc.miregistro.data.UsuarioDbHelper
+import cl.duocuc.miregistro.data.UsuarioDbHelper.SolicitudRegistro
+import cl.duocuc.miregistro.data.SiniestroAdmin
 import cl.duocuc.miregistro.model.Usuario
-import cl.duocuc.miregistro.ui.theme.Exito
-import cl.duocuc.miregistro.ui.theme.FondoClaro
-import cl.duocuc.miregistro.ui.theme.Primario
-import cl.duocuc.miregistro.ui.theme.PrimarioClaro
+import cl.duocuc.miregistro.ui.components.AzulFondoSuave
+import cl.duocuc.miregistro.ui.components.AzulPrincipal
 
+private enum class SeccionAnalista { REGISTROS, SINIESTROS }
 private enum class FiltroAdmin(val etiqueta: String) {
     TODOS("Todos"),
     SIN_ASIGNAR("Sin asignar"),
@@ -72,17 +85,30 @@ private enum class FiltroAdmin(val etiqueta: String) {
 @Composable
 fun AdminPanelScreen(
     idAdmin: Long,
+    onEditarPerfil: (Long) -> Unit,
     onCerrarSesion: () -> Unit
 ) {
     val context = LocalContext.current
     val db = remember { UsuarioDbHelper(context) }
 
     var recargar by remember { mutableIntStateOf(0) }
+    var seccionActual by remember { mutableStateOf(SeccionAnalista.REGISTROS) }
     var filtro by remember { mutableStateOf(FiltroAdmin.TODOS) }
     var siniestroAAsignar by remember { mutableStateOf<SiniestroAdmin?>(null) }
+    var menuPerfilAbierto by remember { mutableStateOf(false) }
+
+    val analista = remember(idAdmin, recargar) {
+        if (db.esAdmin(idAdmin)) db.buscarPorId(idAdmin) else null
+    }
+
+    if (analista == null) {
+        onCerrarSesion()
+        return
+    }
 
     val todosSiniestros = remember(recargar) { db.todosLosSiniestrosAdmin() }
     val liquidadores = remember(recargar) { db.listarLiquidadores() }
+    val solicitudesPendientes = remember(recargar) { db.listarSolicitudesPendientes() }
 
     val sinAsignarCount = todosSiniestros.count { it.liquidadorId == null }
     val asignadosCount = todosSiniestros.count { it.liquidadorId != null && it.estado != "Cerrado" }
@@ -97,22 +123,105 @@ fun AdminPanelScreen(
     }
 
     Scaffold(
-        containerColor = FondoClaro,
+        containerColor = AzulFondoSuave,
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Administración", fontWeight = FontWeight.Bold, fontSize = 19.sp, color = Color.White)
-                        Text("Control y asignación de siniestros", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
+                        Text(
+                            text = "Panel Analista · Seguros BPO",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Color.White
+                        )
+                        Text(
+                            text = analista.nombre,
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
                     }
                 },
                 actions = {
-                    TextButton(onClick = onCerrarSesion) {
-                        Text("Salir", color = Color.White, fontWeight = FontWeight.Bold)
+                    Box {
+                        IconButton(onClick = { menuPerfilAbierto = true }) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Menú de perfil",
+                                tint = Color.White,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuPerfilAbierto,
+                            onDismissRequest = { menuPerfilAbierto = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Editar perfil") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Edit, contentDescription = null, tint = AzulPrincipal)
+                                },
+                                onClick = {
+                                    menuPerfilAbierto = false
+                                    onEditarPerfil(idAdmin)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Cerrar sesión", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ExitToApp,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    menuPerfilAbierto = false
+                                    onCerrarSesion()
+                                }
+                            )
+                        }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primario)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = AzulPrincipal)
             )
+        },
+        bottomBar = {
+            NavigationBar(containerColor = Color.White) {
+                NavigationBarItem(
+                    selected = seccionActual == SeccionAnalista.REGISTROS,
+                    onClick = { seccionActual = SeccionAnalista.REGISTROS },
+                    icon = {
+                        BadgedBox(
+                            badge = {
+                                if (solicitudesPendientes.isNotEmpty()) {
+                                    Badge { Text("${solicitudesPendientes.size}") }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.HowToReg, contentDescription = "Solicitudes de registro")
+                        }
+                    },
+                    label = { Text("Registros") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = AzulPrincipal,
+                        selectedTextColor = AzulPrincipal,
+                        indicatorColor = AzulPrincipal.copy(alpha = 0.12f)
+                    )
+                )
+                NavigationBarItem(
+                    selected = seccionActual == SeccionAnalista.SINIESTROS,
+                    onClick = { seccionActual = SeccionAnalista.SINIESTROS },
+                    icon = {
+                        Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = "Siniestros")
+                    },
+                    label = { Text("Siniestros") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = AzulPrincipal,
+                        selectedTextColor = AzulPrincipal,
+                        indicatorColor = AzulPrincipal.copy(alpha = 0.12f)
+                    )
+                )
+            }
         }
     ) { innerPadding ->
         LazyColumn(
@@ -122,47 +231,110 @@ fun AdminPanelScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TarjetaMetricaAdmin("Total", todosSiniestros.size, Primario, Modifier.weight(1f))
-                    TarjetaMetricaAdmin("Sin asignar", sinAsignarCount, Color(0xFFD97706), Modifier.weight(1f))
-                    TarjetaMetricaAdmin("Activos", asignadosCount, Color(0xFF0288D1), Modifier.weight(1f))
-                    TarjetaMetricaAdmin("Cerrados", cerradosCount, Exito, Modifier.weight(1f))
-                }
-            }
+            item { Spacer(modifier = Modifier.height(6.dp)) }
 
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FiltroAdmin.entries.forEach { opcion ->
-                        FilterChip(
-                            selected = filtro == opcion,
-                            onClick = { filtro = opcion },
-                            label = { Text(opcion.etiqueta) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimarioClaro.copy(alpha = 0.6f),
-                                selectedLabelColor = Primario
+            if (seccionActual == SeccionAnalista.REGISTROS) {
+                item {
+                    Text(
+                        text = "Solicitudes de registro (${solicitudesPendientes.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AzulPrincipal
+                    )
+                }
+
+                if (solicitudesPendientes.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            Text(
+                                text = "No hay usuarios pendientes de aprobación.",
+                                modifier = Modifier.padding(20.dp),
+                                color = Color(0xFF5F6368)
                             )
+                        }
+                    }
+                } else {
+                    items(solicitudesPendientes, key = { it.idUsuario }) { solicitud ->
+                        TarjetaSolicitudRegistro(
+                            solicitud = solicitud,
+                            onAprobar = {
+                                val error = db.aprobarSolicitudRegistro(idAdmin, solicitud.idUsuario)
+                                if (error == null) {
+                                    recargar++
+                                    Toast.makeText(
+                                        context,
+                                        "Cuenta de ${solicitud.nombre} aprobada",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            onDesaprobar = {
+                                val error = db.desaprobarSolicitudRegistro(idAdmin, solicitud.idUsuario)
+                                if (error == null) {
+                                    recargar++
+                                    Toast.makeText(
+                                        context,
+                                        "Solicitud de ${solicitud.nombre} desaprobada",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                }
+                            }
                         )
                     }
                 }
-            }
-
-            if (listaFiltrada.isEmpty()) {
-                item {
-                    Text(
-                        text = "No hay siniestros en esta categoría.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 24.dp)
-                    )
-                }
             } else {
-                items(listaFiltrada, key = { it.numero }) { siniestro ->
-                    TarjetaSiniestroAdmin(
-                        siniestro = siniestro,
-                        onAsignarClick = { siniestroAAsignar = siniestro }
-                    )
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TarjetaMetricaAdmin("Total", todosSiniestros.size, AzulPrincipal, Modifier.weight(1f))
+                        TarjetaMetricaAdmin("Sin asignar", sinAsignarCount, Color(0xFFD97706), Modifier.weight(1f))
+                        TarjetaMetricaAdmin("Activos", asignadosCount, Color(0xFF0288D1), Modifier.weight(1f))
+                        TarjetaMetricaAdmin("Cerrados", cerradosCount, Color(0xFF2E7D32), Modifier.weight(1f))
+                    }
+                }
+
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FiltroAdmin.entries.forEach { opcion ->
+                            FilterChip(
+                                selected = filtro == opcion,
+                                onClick = { filtro = opcion },
+                                label = { Text(opcion.etiqueta) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AzulPrincipal.copy(alpha = 0.15f),
+                                    selectedLabelColor = AzulPrincipal
+                                )
+                            )
+                        }
+                    }
+                }
+
+                if (listaFiltrada.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            Text(
+                                text = "No hay siniestros en esta categoría.",
+                                modifier = Modifier.padding(20.dp),
+                                color = Color(0xFF5F6368)
+                            )
+                        }
+                    }
+                } else {
+                    items(listaFiltrada, key = { it.numero }) { siniestro ->
+                        TarjetaSiniestroAdmin(
+                            siniestro = siniestro,
+                            onAsignarClick = { siniestroAAsignar = siniestro }
+                        )
+                    }
                 }
             }
 
@@ -176,14 +348,95 @@ fun AdminPanelScreen(
             liquidadores = liquidadores,
             onDismiss = { siniestroAAsignar = null },
             onConfirmar = { idLiquidadorSeleccionado ->
-                val ok = db.asignarLiquidador(target.numero, idLiquidadorSeleccionado)
-                if (ok) {
+                val error = db.asignarLiquidador(idAdmin, target.numero, idLiquidadorSeleccionado)
+                if (error == null) {
                     recargar++
                     Toast.makeText(context, "Siniestro ${target.numero} asignado", Toast.LENGTH_SHORT).show()
+                    siniestroAAsignar = null
+                } else {
+                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                 }
-                siniestroAAsignar = null
             }
         )
+    }
+}
+
+@Composable
+private fun TarjetaSolicitudRegistro(
+    solicitud: SolicitudRegistro,
+    onAprobar: () -> Unit,
+    onDesaprobar: () -> Unit
+) {
+    val tieneSiniestros = solicitud.cantidadSiniestros > 0
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Column {
+                Text(
+                    text = solicitud.nombre,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color(0xFF1F2937)
+                )
+                Text(
+                    text = "RUT: ${solicitud.rut} · ${solicitud.correo}",
+                    fontSize = 13.sp,
+                    color = Color(0xFF5F6368)
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = if (tieneSiniestros) Color(0xFFDCFCE7) else Color(0xFFFEF3C7)
+            ) {
+                Text(
+                    text = if (tieneSiniestros)
+                        "Verificado: ${solicitud.cantidadSiniestros} siniestro(s) asociado(s)"
+                    else
+                        "Sin siniestros registrados",
+                    color = if (tieneSiniestros) Color(0xFF15803D) else Color(0xFFB45309),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDesaprobar,
+                    modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Desaprobar")
+                }
+
+                Button(
+                    onClick = onAprobar,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = AzulPrincipal)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Aprobar")
+                }
+            }
+        }
     }
 }
 
@@ -191,23 +444,30 @@ fun AdminPanelScreen(
 private fun TarjetaMetricaAdmin(
     titulo: String,
     valor: Int,
-    color: Color,
+    colorAcento: Color,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp, horizontal = 4.dp),
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(valor.toString(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(titulo, fontSize = 11.sp, color = Color(0xFF5F6368))
+            Text(
+                text = valor.toString(),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = colorAcento
+            )
+            Text(
+                text = titulo,
+                fontSize = 11.sp,
+                color = Color(0xFF5F6368)
+            )
         }
     }
 }
@@ -224,12 +484,10 @@ private fun TarjetaSiniestroAdmin(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
@@ -241,67 +499,56 @@ private fun TarjetaSiniestroAdmin(
                     text = siniestro.numero,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Primario
+                    color = AzulPrincipal
                 )
-                ChipEstadoAdmin(siniestro.estado)
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = if (estaCerrado) Color(0xFFDCFCE7) else AzulPrincipal.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = siniestro.estado,
+                        color = if (estaCerrado) Color(0xFF15803D) else AzulPrincipal,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
             }
 
             Text(
                 text = "Asegurado: ${siniestro.aseguradoNombre}",
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF1C1B22)
+                color = Color(0xFF1F2937)
             )
-
             Text(
-                text = "${siniestro.tipo} · Placa ${siniestro.placa.ifBlank { "N/A" }} · Prioridad ${siniestro.prioridad}",
-                fontSize = 12.sp,
+                text = "${siniestro.tipo} · Patente ${siniestro.placa.ifBlank { "S/P" }}",
+                fontSize = 13.sp,
                 color = Color(0xFF5F6368)
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = if (sinAsignar) Icons.Default.Warning else Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = if (sinAsignar) Color(0xFFD97706) else Exito,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (sinAsignar) "Sin liquidador asignado" else "Liquidador: ${siniestro.liquidadorNombre}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (sinAsignar) Color(0xFFB45309) else Color(0xFF1C1B22)
-                    )
-                }
+                Text(
+                    text = if (sinAsignar) "Liquidador: Sin asignar"
+                    else "Liquidador: ${siniestro.liquidadorNombre ?: "Asignado"}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (sinAsignar) Color(0xFFD97706) else Color(0xFF1F2937)
+                )
 
                 if (!estaCerrado) {
-                    OutlinedButton(
+                    Button(
                         onClick = onAsignarClick,
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, Primario),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Primario)
+                        colors = ButtonDefaults.buttonColors(containerColor = AzulPrincipal),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AssignmentInd,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = if (sinAsignar) "Asignar" else "Reasignar",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 12.sp
                         )
                     }
                 }
@@ -311,33 +558,17 @@ private fun TarjetaSiniestroAdmin(
 }
 
 @Composable
-private fun ChipEstadoAdmin(estado: String) {
-    val (fondo, texto) = when (estado) {
-        "En evaluación" -> Color(0xFFFEF3C7) to Color(0xFFB45309)
-        "En liquidación" -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
-        "Cerrado" -> Color(0xFFDCFCE7) to Color(0xFF15803D)
-        else -> Color(0xFFF3F4F6) to Color(0xFF4B5563)
-    }
-    Text(
-        text = estado,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Medium,
-        color = texto,
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(fondo)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    )
-}
-
-@Composable
 private fun DialogoAsignarLiquidador(
     siniestro: SiniestroAdmin,
     liquidadores: List<Usuario>,
     onDismiss: () -> Unit,
     onConfirmar: (Long) -> Unit
 ) {
-    var seleccionadoId by remember { mutableStateOf(siniestro.liquidadorId ?: liquidadores.firstOrNull()?.id) }
+    var seleccionadoId by remember {
+        mutableStateOf(siniestro.liquidadorId ?: liquidadores.firstOrNull()?.id)
+    }
+
+    val cambioValido = seleccionadoId != null && seleccionadoId != siniestro.liquidadorId
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -345,7 +576,7 @@ private fun DialogoAsignarLiquidador(
             Text(
                 text = "Asignar ${siniestro.numero}",
                 fontWeight = FontWeight.Bold,
-                color = Primario
+                color = AzulPrincipal
             )
         },
         text = {
@@ -372,13 +603,13 @@ private fun DialogoAsignarLiquidador(
                             RadioButton(
                                 selected = seleccionadoId == liq.id,
                                 onClick = { seleccionadoId = liq.id },
-                                colors = RadioButtonDefaults.colors(selectedColor = Primario)
+                                colors = RadioButtonDefaults.colors(selectedColor = AzulPrincipal)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = null,
-                                tint = Primario,
+                                tint = AzulPrincipal,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -388,15 +619,26 @@ private fun DialogoAsignarLiquidador(
                             }
                         }
                     }
+                    if (siniestro.liquidadorId != null && seleccionadoId == siniestro.liquidadorId) {
+                        Text(
+                            text = "Selecciona un liquidador diferente al actual para reasignar.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
             TextButton(
-                enabled = seleccionadoId != null,
+                enabled = cambioValido,
                 onClick = { seleccionadoId?.let(onConfirmar) }
             ) {
-                Text("Confirmar asignación", color = Primario, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Confirmar asignación",
+                    color = if (cambioValido) AzulPrincipal else Color.Gray,
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         dismissButton = {

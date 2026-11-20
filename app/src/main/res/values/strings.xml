@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="nombre_app">Mi Siniestro</string>
+    <string name="nombre_app">Seguro BPO</string>
 
     <!-- Generales -->
     <string name="accion_volver">Volver</string>
@@ -43,7 +43,9 @@
     <string name="detalle_adjuntar_titulo">¿Tienes documentación adicional?</string>
     <string name="detalle_adjuntar_subtitulo">Adjunta fotos o archivos para agilizar la evaluación.</string>
     <string name="detalle_adjuntar_boton">Adjuntar evidencia</string>
-
+    <string name="error_correo_invalido">Ingresa un correo electrónico válido</string>
+    <string name="error_contrasena_vacia">Ingresa tu contraseña</string>
+    <string name="error_credenciales">Correo o contraseña incorrectos</string>
     <!-- Estados -->
     <string name="estado_recibido">Recibido</string>
     <string name="estado_recibido_desc">Recibimos tu reporte y lo estamos revisando para asignarlo.</string>

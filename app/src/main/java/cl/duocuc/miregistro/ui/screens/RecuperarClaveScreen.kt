@@ -2,7 +2,6 @@ package cl.duocuc.miregistro.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +31,7 @@ import cl.duocuc.miregistro.ui.components.AzulPrincipal
 import cl.duocuc.miregistro.ui.components.BloquePreguntaSeguridad
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
 import cl.duocuc.miregistro.ui.components.CampoTexto
+import cl.duocuc.miregistro.ui.components.EncabezadoEmpresa
 import cl.duocuc.miregistro.ui.theme.Dimens
 
 @Composable
@@ -55,16 +55,17 @@ fun RecuperarClaveScreen(
 
     var mensajeError by remember { mutableStateOf<String?>(null) }
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(AzulFondoSuave),
-        contentAlignment = Alignment.Center
+            .background(AzulFondoSuave)
+            .verticalScroll(rememberScrollState())
     ) {
+        EncabezadoEmpresa(onVolver = onVolver)
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
                 .padding(Dimens.espacioPantalla)
         ) {
             Card(

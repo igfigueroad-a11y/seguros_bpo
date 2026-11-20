@@ -107,6 +107,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val id = entry.arguments?.getLong("id") ?: 0L
             AdminPanelScreen(
                 idAdmin = id,
+                onEditarPerfil = { idUsuario ->
+                    navController.navigate("perfil/$idUsuario")
+                },
                 onCerrarSesion = {
                     bienvenidaMostrada = false
                     navController.navigate("login") {

@@ -34,9 +34,17 @@ data class SiniestroAdmin(
 class UsuarioDbHelper(context: Context) :
     SQLiteOpenHelper(context, NOMBRE_BD, null, VERSION_BD) {
 
+    data class SolicitudRegistro(
+        val idUsuario: Long,
+        val nombre: String,
+        val rut: String,
+        val correo: String,
+        val cantidadSiniestros: Int
+    )
+
     companion object {
         private const val NOMBRE_BD = "seguimiento_siniestros.db"
-        private const val VERSION_BD = 9
+        private const val VERSION_BD = 10
 
         val ORDEN_ESTADOS = listOf(
             "Recibido",
@@ -61,6 +69,7 @@ class UsuarioDbHelper(context: Context) :
         private const val USU_CORREO = "correo"
         private const val USU_CLAVE = "clave_hash"
         private const val USU_ACTIVO = "activo"
+        private const val USU_ESTADO_VERIFICACION = "estado_verificacion"
         private const val USU_ROL = "id_rol"
 
         private const val USU_PREG1 = "pregunta1"
@@ -113,6 +122,7 @@ class UsuarioDbHelper(context: Context) :
                     "$USU_CORREO TEXT NOT NULL UNIQUE, " +
                     "$USU_CLAVE TEXT NOT NULL, " +
                     "$USU_ACTIVO INTEGER NOT NULL DEFAULT 1, " +
+                    "$USU_ESTADO_VERIFICACION TEXT NOT NULL DEFAULT 'APROBADO', " +
                     "$USU_ROL INTEGER NOT NULL REFERENCES $TABLA_ROLES($ROL_ID), " +
                     "$USU_PREG1 TEXT, " +
                     "$USU_RESP1 TEXT, " +
@@ -215,6 +225,7 @@ class UsuarioDbHelper(context: Context) :
                 put(USU_CORREO, e[2] as String)
                 put(USU_CLAVE, hash)
                 put(USU_ACTIVO, 1)
+                put(USU_ESTADO_VERIFICACION, "APROBADO")
                 put(USU_ROL, e[3] as Long)
                 put(USU_PREG1, p1)
                 put(USU_RESP1, e[4] as String)
@@ -302,11 +313,37 @@ class UsuarioDbHelper(context: Context) :
         return lista
     }
 
+    fun verificarEstadoRegistro(correo: String): String? {
+        readableDatabase.rawQuery(
+            "SELECT $USU_ESTADO_VERIFICACION FROM $TABLA_USUARIOS WHERE LOWER($USU_CORREO) = LOWER(?)",
+            arrayOf(correo.trim())
+        ).use { c ->
+            if (c.moveToFirst()) {
+                return when (c.getString(0)) {
+                    "PENDIENTE" -> "Tu cuenta está pendiente de aprobación por un analista."
+                    "RECHAZADO" -> "Tu solicitud de registro fue desaprobada."
+                    else -> null
+                }
+            }
+        }
+        return null
+    }
+
     fun validarLogin(correo: String, clave: String): Usuario? =
         consultarUsuarios(
             "$SQL_SELECT_USUARIOS WHERE u.$USU_CORREO = ? AND u.$USU_CLAVE = ? AND u.$USU_ACTIVO = 1",
             arrayOf(correo.trim().lowercase(), hashearClave(clave))
         ).firstOrNull()
+
+    fun iniciarSesion(correo: String, clave: String): Usuario? = validarLogin(correo, clave)
+
+    fun esAdmin(idUsuario: Long): Boolean =
+        readableDatabase.rawQuery(
+            "SELECT 1 FROM $TABLA_USUARIOS u " +
+                    "INNER JOIN $TABLA_ROLES r ON u.$USU_ROL = r.$ROL_ID " +
+                    "WHERE u.$USU_ID = ? AND u.$USU_ACTIVO = 1 AND r.$ROL_NOMBRE IN ('ADMIN', 'ANALISTA')",
+            arrayOf(idUsuario.toString())
+        ).use { it.moveToFirst() }
 
     fun buscarPorId(id: Long): Usuario? =
         consultarUsuarios("$SQL_SELECT_USUARIOS WHERE u.$USU_ID = ?", arrayOf(id.toString()))
@@ -355,7 +392,8 @@ class UsuarioDbHelper(context: Context) :
             put(USU_RUT, rut.trim())
             put(USU_CORREO, correo.trim().lowercase())
             put(USU_CLAVE, hashearClave(claveTextoPlano))
-            put(USU_ACTIVO, 1)
+            put(USU_ACTIVO, 0)
+            put(USU_ESTADO_VERIFICACION, "PENDIENTE")
             put(USU_ROL, idRol)
             put(USU_PREG1, preg1.trim())
             put(USU_RESP1, resp1.trim())
@@ -365,6 +403,64 @@ class UsuarioDbHelper(context: Context) :
             put(USU_RESP3, resp3.trim())
         }
         return writableDatabase.insert(TABLA_USUARIOS, null, valores) != -1L
+    }
+
+    fun listarSolicitudesPendientes(): List<SolicitudRegistro> {
+        val lista = mutableListOf<SolicitudRegistro>()
+        val sql = """
+            SELECT u.$USU_ID, u.$USU_NOMBRE, u.$USU_RUT, u.$USU_CORREO,
+                   (SELECT COUNT(*) FROM $TABLA_SINIESTROS s WHERE s.$SIN_ASEGURADO = u.$USU_ID) AS total_sin
+            FROM $TABLA_USUARIOS u
+            WHERE u.$USU_ESTADO_VERIFICACION = 'PENDIENTE'
+            ORDER BY u.$USU_ID DESC
+        """.trimIndent()
+
+        readableDatabase.rawQuery(sql, null).use { c ->
+            while (c.moveToNext()) {
+                lista.add(
+                    SolicitudRegistro(
+                        idUsuario = c.getLong(0),
+                        nombre = c.getString(1),
+                        rut = c.getString(2),
+                        correo = c.getString(3),
+                        cantidadSiniestros = c.getInt(4)
+                    )
+                )
+            }
+        }
+        return lista
+    }
+
+    fun aprobarSolicitudRegistro(idAnalista: Long, idUsuario: Long): String? {
+        if (!esAdmin(idAnalista)) return "No tienes permisos para aprobar registros."
+
+        val valores = ContentValues().apply {
+            put(USU_ACTIVO, 1)
+            put(USU_ESTADO_VERIFICACION, "APROBADO")
+        }
+        val filas = writableDatabase.update(
+            TABLA_USUARIOS,
+            valores,
+            "$USU_ID = ?",
+            arrayOf(idUsuario.toString())
+        )
+        return if (filas > 0) null else "No se pudo aprobar la solicitud."
+    }
+
+    fun desaprobarSolicitudRegistro(idAnalista: Long, idUsuario: Long): String? {
+        if (!esAdmin(idAnalista)) return "No tienes permisos para desaprobar registros."
+
+        val valores = ContentValues().apply {
+            put(USU_ACTIVO, 0)
+            put(USU_ESTADO_VERIFICACION, "RECHAZADO")
+        }
+        val filas = writableDatabase.update(
+            TABLA_USUARIOS,
+            valores,
+            "$USU_ID = ?",
+            arrayOf(idUsuario.toString())
+        )
+        return if (filas > 0) null else "No se pudo desaprobar la solicitud."
     }
 
     fun existeSiniestro(numero: String): Boolean =
@@ -415,6 +511,47 @@ class UsuarioDbHelper(context: Context) :
             "$SIN_NUMERO = ?",
             arrayOf(numeroSiniestro)
         ) > 0
+    }
+
+    fun asignarLiquidador(idAdmin: Long, numeroSiniestro: String, idLiquidador: Long): String? {
+        if (!esAdmin(idAdmin)) {
+            return "Acceso denegado: no tienes permisos para asignar siniestros"
+        }
+
+        val liquidadorValido = readableDatabase.rawQuery(
+            "SELECT 1 FROM $TABLA_USUARIOS u " +
+                    "INNER JOIN $TABLA_ROLES r ON u.$USU_ROL = r.$ROL_ID " +
+                    "WHERE u.$USU_ID = ? AND u.$USU_ACTIVO = 1 AND r.$ROL_NOMBRE = 'LIQUIDADOR'",
+            arrayOf(idLiquidador.toString())
+        ).use { it.moveToFirst() }
+
+        if (!liquidadorValido) {
+            return "El liquidador seleccionado no existe o está inactivo"
+        }
+
+        var estadoActual: String? = null
+        var liquidadorActual: Long? = null
+
+        readableDatabase.rawQuery(
+            "SELECT $SIN_ESTADO, $SIN_LIQUIDADOR FROM $TABLA_SINIESTROS WHERE $SIN_NUMERO = ?",
+            arrayOf(numeroSiniestro)
+        ).use { c ->
+            if (c.moveToFirst()) {
+                estadoActual = c.getString(0)
+                liquidadorActual = if (c.isNull(1)) null else c.getLong(1)
+            }
+        }
+
+        if (estadoActual == null) return "El siniestro no existe"
+        if (estadoActual.equals("Cerrado", ignoreCase = true)) {
+            return "No se puede asignar un siniestro que ya está cerrado"
+        }
+        if (liquidadorActual == idLiquidador) {
+            return "Este siniestro ya está asignado a ese liquidador"
+        }
+
+        val exito = asignarLiquidador(numeroSiniestro, idLiquidador)
+        return if (exito) null else "No se pudo guardar la asignación"
     }
 
     fun siniestrosDeLiquidador(idLiquidador: Long): List<SiniestroResumen> {
@@ -536,7 +673,7 @@ class UsuarioDbHelper(context: Context) :
                     idSiniestro = cursor.getLong(0),
                     numero = cursor.getString(1),
                     aseguradoNombre = cursor.getString(2),
-                    companiaNombre = "Andes BPO",
+                    companiaNombre = "Seguros BPO",
                     tipoSiniestro = cursor.getString(3),
                     fechaOcurrencia = cursor.getString(4),
                     idEtapa = idEtapaCalculado,
@@ -576,7 +713,7 @@ class UsuarioDbHelper(context: Context) :
                     idSiniestro = cursor.getLong(0),
                     numero = cursor.getString(1),
                     aseguradoNombre = cursor.getString(2),
-                    companiaNombre = "Andes BPO",
+                    companiaNombre = "Seguros BPO",
                     tipoSiniestro = cursor.getString(3),
                     fechaOcurrencia = cursor.getString(4),
                     idEtapa = idEtapaCalculado,
