@@ -2,7 +2,6 @@ package cl.duocuc.miregistro.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,11 +26,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import cl.duocuc.miregistro.R
 import cl.duocuc.miregistro.data.UsuarioDbHelper
-import cl.duocuc.miregistro.ui.components.AzulFondoSuave
-import cl.duocuc.miregistro.ui.components.AzulPrincipal
 import cl.duocuc.miregistro.ui.components.BloquePreguntaSeguridad
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
 import cl.duocuc.miregistro.ui.components.CampoTexto
+import cl.duocuc.miregistro.ui.components.EncabezadoEmpresa
 import cl.duocuc.miregistro.ui.theme.Dimens
 
 @Composable
@@ -55,16 +53,17 @@ fun RecuperarClaveScreen(
 
     var mensajeError by remember { mutableStateOf<String?>(null) }
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(AzulFondoSuave),
-        contentAlignment = Alignment.Center
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
     ) {
+        EncabezadoEmpresa(onVolver = onVolver)
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
                 .padding(Dimens.espacioPantalla)
         ) {
             Card(
@@ -198,7 +197,7 @@ fun RecuperarClaveScreen(
                     TextButton(onClick = onVolver) {
                         Text(
                             text = "Volver a iniciar sesión",
-                            color = AzulPrincipal,
+                            color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelLarge
                         )
                     }

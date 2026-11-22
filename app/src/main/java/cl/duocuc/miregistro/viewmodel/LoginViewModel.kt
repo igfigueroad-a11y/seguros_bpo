@@ -25,11 +25,15 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun onCorreoCambia(valor: String) {
-        _uiState.update { it.copy(correo = valor, errorCorreo = null, errorGeneral = null) }
+        _uiState.update {
+            it.copy(correo = valor, errorCorreo = null, errorGeneral = null, mensajeBloqueo = null)
+        }
     }
 
     fun onContrasenaCambia(valor: String) {
-        _uiState.update { it.copy(contrasena = valor, errorContrasena = null, errorGeneral = null) }
+        _uiState.update {
+            it.copy(contrasena = valor, errorContrasena = null, errorGeneral = null, mensajeBloqueo = null)
+        }
     }
 
     fun onAlternarVisibilidad() {
@@ -55,17 +59,26 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        _uiState.update { it.copy(cargando = true, errorGeneral = null) }
+        _uiState.update { it.copy(cargando = true, errorGeneral = null, mensajeBloqueo = null) }
 
         viewModelScope.launch {
             val resultado = runCatching {
                 withContext(Dispatchers.IO) {
-                    db.validarLogin(estado.correo, estado.contrasena)
+                    val bloqueo = db.verificarEstadoRegistro(estado.correo)
+                    if (bloqueo != null) {
+                        Pair(null, bloqueo)
+                    } else {
+                        Pair(db.validarLogin(estado.correo, estado.contrasena), null)
+                    }
                 }
             }
             resultado
-                .onSuccess { usuario ->
-                    if (usuario != null) {
+                .onSuccess { (usuario, bloqueo) ->
+                    if (bloqueo != null) {
+                        _uiState.update {
+                            it.copy(cargando = false, mensajeBloqueo = bloqueo)
+                        }
+                    } else if (usuario != null) {
                         sesion.guardar(usuario.id, usuario.rolId)
                         _uiState.update { it.copy(cargando = false, usuario = usuario) }
                     } else {
@@ -82,7 +95,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // La pantalla lo llama después de navegar, para no repetir el ingreso
     fun onLoginConsumido() {
         _uiState.update { it.copy(usuario = null) }
     }

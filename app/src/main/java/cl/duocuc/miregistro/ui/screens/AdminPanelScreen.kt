@@ -26,7 +26,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -35,11 +34,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -57,10 +53,8 @@ import androidx.compose.ui.unit.sp
 import cl.duocuc.miregistro.data.SiniestroAdmin
 import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.model.Usuario
+import cl.duocuc.miregistro.ui.components.ContenedorConMenuLateral
 import cl.duocuc.miregistro.ui.theme.Exito
-import cl.duocuc.miregistro.ui.theme.FondoClaro
-import cl.duocuc.miregistro.ui.theme.Primario
-import cl.duocuc.miregistro.ui.theme.PrimarioClaro
 
 private enum class FiltroAdmin(val etiqueta: String) {
     TODOS("Todos"),
@@ -68,10 +62,10 @@ private enum class FiltroAdmin(val etiqueta: String) {
     ASIGNADOS("Asignados")
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminPanelScreen(
     idAdmin: Long,
+    onEditarPerfil: (Long) -> Unit = {},
     onCerrarSesion: () -> Unit
 ) {
     val context = LocalContext.current
@@ -96,24 +90,12 @@ fun AdminPanelScreen(
         }
     }
 
-    Scaffold(
-        containerColor = FondoClaro,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Administración", fontWeight = FontWeight.Bold, fontSize = 19.sp, color = Color.White)
-                        Text("Control y asignación de siniestros", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
-                    }
-                },
-                actions = {
-                    TextButton(onClick = onCerrarSesion) {
-                        Text("Salir", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primario)
-            )
-        }
+    ContenedorConMenuLateral(
+        idUsuario = idAdmin,
+        titulo = "Administración",
+        rutaActual = "admin",
+        onEditarPerfil = { onEditarPerfil(idAdmin) },
+        onCerrarSesion = onCerrarSesion
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -125,7 +107,7 @@ fun AdminPanelScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TarjetaMetricaAdmin("Total", todosSiniestros.size, Primario, Modifier.weight(1f))
+                    TarjetaMetricaAdmin("Total", todosSiniestros.size, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
                     TarjetaMetricaAdmin("Sin asignar", sinAsignarCount, Color(0xFFD97706), Modifier.weight(1f))
                     TarjetaMetricaAdmin("Activos", asignadosCount, Color(0xFF0288D1), Modifier.weight(1f))
                     TarjetaMetricaAdmin("Cerrados", cerradosCount, Exito, Modifier.weight(1f))
@@ -140,8 +122,8 @@ fun AdminPanelScreen(
                             onClick = { filtro = opcion },
                             label = { Text(opcion.etiqueta) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimarioClaro.copy(alpha = 0.6f),
-                                selectedLabelColor = Primario
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                selectedLabelColor = MaterialTheme.colorScheme.primary
                             )
                         )
                     }
@@ -197,7 +179,7 @@ private fun TarjetaMetricaAdmin(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
@@ -207,7 +189,7 @@ private fun TarjetaMetricaAdmin(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(valor.toString(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(titulo, fontSize = 11.sp, color = Color(0xFF5F6368))
+            Text(titulo, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -223,7 +205,7 @@ private fun TarjetaSiniestroAdmin(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
@@ -241,7 +223,7 @@ private fun TarjetaSiniestroAdmin(
                     text = siniestro.numero,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Primario
+                    color = MaterialTheme.colorScheme.primary
                 )
                 ChipEstadoAdmin(siniestro.estado)
             }
@@ -250,13 +232,13 @@ private fun TarjetaSiniestroAdmin(
                 text = "Asegurado: ${siniestro.aseguradoNombre}",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF1C1B22)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = "${siniestro.tipo} · Placa ${siniestro.placa.ifBlank { "N/A" }} · Prioridad ${siniestro.prioridad}",
                 fontSize = 12.sp,
-                color = Color(0xFF5F6368)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -281,7 +263,7 @@ private fun TarjetaSiniestroAdmin(
                         text = if (sinAsignar) "Sin liquidador asignado" else "Liquidador: ${siniestro.liquidadorNombre}",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (sinAsignar) Color(0xFFB45309) else Color(0xFF1C1B22)
+                        color = if (sinAsignar) Color(0xFFD97706) else MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -289,8 +271,8 @@ private fun TarjetaSiniestroAdmin(
                     OutlinedButton(
                         onClick = onAsignarClick,
                         shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, Primario),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Primario)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AssignmentInd,
@@ -345,7 +327,7 @@ private fun DialogoAsignarLiquidador(
             Text(
                 text = "Asignar ${siniestro.numero}",
                 fontWeight = FontWeight.Bold,
-                color = Primario
+                color = MaterialTheme.colorScheme.primary
             )
         },
         text = {
@@ -372,19 +354,19 @@ private fun DialogoAsignarLiquidador(
                             RadioButton(
                                 selected = seleccionadoId == liq.id,
                                 onClick = { seleccionadoId = liq.id },
-                                colors = RadioButtonDefaults.colors(selectedColor = Primario)
+                                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = null,
-                                tint = Primario,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(liq.nombre, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                Text(liq.correo, fontSize = 12.sp, color = Color(0xFF5F6368))
+                                Text(liq.correo, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -396,7 +378,7 @@ private fun DialogoAsignarLiquidador(
                 enabled = seleccionadoId != null,
                 onClick = { seleccionadoId?.let(onConfirmar) }
             ) {
-                Text("Confirmar asignación", color = Primario, fontWeight = FontWeight.Bold)
+                Text("Confirmar asignación", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

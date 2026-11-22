@@ -1,12 +1,15 @@
 package cl.duocuc.miregistro.model
 
+import androidx.annotation.StringRes
+
 data class LoginUiState(
     val correo: String = "",
     val contrasena: String = "",
     val contrasenaVisible: Boolean = false,
-    val errorCorreo: Int? = null,
-    val errorContrasena: Int? = null,
-    val errorGeneral: Int? = null,
+    @StringRes val errorCorreo: Int? = null,
+    @StringRes val errorContrasena: Int? = null,
+    @StringRes val errorGeneral: Int? = null,
+    val mensajeBloqueo: String? = null,
     val cargando: Boolean = false,
     val usuario: Usuario? = null
 )

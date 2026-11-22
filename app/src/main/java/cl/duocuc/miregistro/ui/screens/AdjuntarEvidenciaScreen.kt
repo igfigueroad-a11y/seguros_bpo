@@ -50,10 +50,9 @@ fun AdjuntarEvidenciaScreen(
     val contentResolver = context.contentResolver
     val db = remember { UsuarioDbHelper(context) }
 
-    var archivosSeleccionados = remember { mutableStateListOf<ArchivoSeleccionado>() }
+    val archivosSeleccionados = remember { mutableStateListOf<ArchivoSeleccionado>() }
     var guardadoExitoso by remember { mutableStateOf(false) }
 
-    // 1. Lanzador para Tomar Foto con la Cámara (Individual)
     val camaraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
             val nombre = "foto_camara_${System.currentTimeMillis()}.jpg"
@@ -61,7 +60,6 @@ fun AdjuntarEvidenciaScreen(
         }
     }
 
-    // 2. Lanzador para Galería (Múltiples imágenes)
     val galeriaMultiLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         uris.forEach { uri ->
             var nombre = "foto_galeria_${System.currentTimeMillis()}.jpg"
@@ -75,7 +73,6 @@ fun AdjuntarEvidenciaScreen(
         }
     }
 
-    // 3. Lanzador para Documentos / Archivos (Múltiples archivos)
     val docMultiLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         uris.forEach { uri ->
             var nombre = "documento_${System.currentTimeMillis()}"
@@ -93,6 +90,7 @@ fun AdjuntarEvidenciaScreen(
     val colorPrincipal = MaterialTheme.colorScheme.primary
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Adjuntar Evidencia", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
@@ -107,22 +105,32 @@ fun AdjuntarEvidenciaScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Siniestro: $numeroSiniestro", color = colorPrincipal, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.fillMaxWidth()
+                text = "Siniestro: $numeroSiniestro",
+                color = colorPrincipal,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Sube fotografías (Cámara/Galería) o documentos (PDF, Word) para agilizar tu caso.", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.fillMaxWidth()
+                text = "Sube fotografías (Cámara/Galería) o documentos (PDF, Word) para agilizar tu caso.",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(24.dp))
 
-            // Área de previsualización de los archivos seleccionados
             Box(
-                modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFF3F4F6)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 contentAlignment = Alignment.Center
             ) {
                 if (archivosSeleccionados.isEmpty()) {
-                    Text("No hay archivos seleccionados", color = Color.Gray)
+                    Text("No hay archivos seleccionados", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -132,7 +140,7 @@ fun AdjuntarEvidenciaScreen(
                             Card(
                                 modifier = Modifier.size(120.dp),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxSize().padding(4.dp),
@@ -151,7 +159,9 @@ fun AdjuntarEvidenciaScreen(
                                             try {
                                                 val stream = contentResolver.openInputStream(archivo.uri)
                                                 BitmapFactory.decodeStream(stream)?.asImageBitmap()
-                                            } catch(e: Exception) { null }
+                                            } catch (e: Exception) {
+                                                null
+                                            }
                                         }
                                         if (bitmapUri != null) {
                                             Image(
@@ -188,7 +198,6 @@ fun AdjuntarEvidenciaScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // LOS 3 BOTONES: Cámara, Galería y Archivos
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = { camaraLauncher.launch(null) },
@@ -222,7 +231,6 @@ fun AdjuntarEvidenciaScreen(
             } else {
                 Button(
                     onClick = {
-                        // Guardar cada archivo o foto seleccionada en la base de datos
                         archivosSeleccionados.forEach { archivo ->
                             val bytes = if (archivo.bitmap != null) {
                                 val stream = ByteArrayOutputStream()

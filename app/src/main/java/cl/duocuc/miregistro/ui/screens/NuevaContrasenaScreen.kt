@@ -2,9 +2,22 @@ package cl.duocuc.miregistro.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -12,8 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
 import cl.duocuc.miregistro.ui.components.CampoContrasena
+import cl.duocuc.miregistro.ui.components.EncabezadoEmpresa
 import cl.duocuc.miregistro.ui.theme.Dimens
-
 
 private fun esContrasenaValida(password: String): Boolean {
     val longitudValida = password.length >= 8
@@ -38,12 +51,18 @@ fun NuevaContrasenaScreen(
     var confirmarVisible by remember { mutableStateOf(false) }
     var mensajeError by remember { mutableStateOf<String?>(null) }
 
-    Box(
-        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
     ) {
+        EncabezadoEmpresa()
+
         Card(
-            modifier = Modifier.fillMaxWidth().padding(Dimens.espacioPantalla),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.espacioPantalla),
             shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = Dimens.elevacionTarjeta)
@@ -81,7 +100,12 @@ fun NuevaContrasenaScreen(
                 )
 
                 mensajeError?.let {
-                    Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
                 }
 
                 BotonPrincipal(
@@ -93,7 +117,6 @@ fun NuevaContrasenaScreen(
                         } else if (nuevaContrasena != confirmarContrasena) {
                             mensajeError = "Las contraseñas no coinciden"
                         } else if (!esContrasenaValida(nuevaContrasena)) {
-
                             mensajeError = "La contraseña debe tener al menos 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial"
                         } else {
                             val exito = dbHelper.actualizarContrasena(correo, nuevaContrasena)

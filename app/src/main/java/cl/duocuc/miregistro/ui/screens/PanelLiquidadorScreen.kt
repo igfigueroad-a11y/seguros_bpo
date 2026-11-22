@@ -18,7 +18,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,87 +31,91 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.model.SiniestroResumen
-import cl.duocuc.miregistro.ui.theme.Primario
+import cl.duocuc.miregistro.ui.components.ContenedorConMenuLateral
 import cl.duocuc.miregistro.viewmodel.PanelLiquidadorViewModel
 
 @Composable
 fun PanelLiquidadorScreen(
     idLiquidador: Long,
+    onEditarPerfil: (Long) -> Unit = {},
     onCerrarSesion: () -> Unit = {},
     viewModel: PanelLiquidadorViewModel = viewModel()
 ) {
     val ui by viewModel.ui.collectAsState()
+
     LaunchedEffect(idLiquidador) { viewModel.cargar(idLiquidador) }
 
-    if (ui.cargando) {
-        Column(Modifier.fillMaxSize(), Arrangement.Center, Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = Primario)
-        }
-        return
-    }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    ContenedorConMenuLateral(
+        idUsuario = idLiquidador,
+        titulo = "Panel Liquidador",
+        rutaActual = "panel",
+        onEditarPerfil = { onEditarPerfil(idLiquidador) },
+        onCerrarSesion = onCerrarSesion
+    ) { innerPadding ->
+        if (ui.cargando) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column {
-                    Text("Panel del Liquidador", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("Seguimiento y gestión de siniestros", style = MaterialTheme.typography.bodySmall)
-                }
-                TextButton(onClick = onCerrarSesion) {
-                    Text("Salir", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                }
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
+            return@ContenedorConMenuLateral
         }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TarjetaResumen("Siniestros asignados", ui.resumen.asignados, Primario, Modifier.weight(1f))
-                    TarjetaResumen("En evaluación", ui.resumen.enEvaluacion, Color(0xFFF59E0B), Modifier.weight(1f))
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TarjetaResumen("Pendientes de documentos", ui.resumen.pendientesDocs, Color(0xFFDC2626), Modifier.weight(1f))
-                    TarjetaResumen("Cerrados este mes", ui.resumen.cerradosMes, Color(0xFF15803D), Modifier.weight(1f))
-                }
-            }
-        }
-        item { Text("Siniestros asignados", fontWeight = FontWeight.Bold) }
-        if (ui.siniestros.isEmpty()) {
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item {
-                Text(
-                    text = "No tienes siniestros asignados por el administrador.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TarjetaResumen("Siniestros asignados", ui.resumen.asignados, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                        TarjetaResumen("En evaluación", ui.resumen.enEvaluacion, Color(0xFFF59E0B), Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TarjetaResumen("Pendientes de documentos", ui.resumen.pendientesDocs, Color(0xFFDC2626), Modifier.weight(1f))
+                        TarjetaResumen("Cerrados este mes", ui.resumen.cerradosMes, Color(0xFF15803D), Modifier.weight(1f))
+                    }
+                }
             }
-        } else {
-            items(ui.siniestros, key = { it.numero }) { s ->
-                FilaSiniestro(
-                    s = s,
-                    seleccionada = s.numero == ui.seleccionado?.numero,
-                    onClick = viewModel::seleccionar
-                )
+            item { Text("Siniestros asignados", fontWeight = FontWeight.Bold) }
+            if (ui.siniestros.isEmpty()) {
+                item {
+                    Text(
+                        text = "No tienes siniestros asignados por el administrador.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                items(ui.siniestros, key = { it.numero }) { s ->
+                    FilaSiniestro(
+                        s = s,
+                        seleccionada = s.numero == ui.seleccionado?.numero,
+                        onClick = viewModel::seleccionar
+                    )
+                }
             }
+            ui.seleccionado?.let { detalle ->
+                item {
+                    DetalleSiniestroPanel(
+                        d = detalle,
+                        mensaje = ui.mensaje,
+                        onGuardarEstado = { nuevoEstado -> viewModel.guardarEstado(nuevoEstado) },
+                        onEnviarComentario = { nuevoComentario -> viewModel.guardarComentario(nuevoComentario) },
+                        onSolicitarDocumento = viewModel::solicitarDocumento
+                    )
+                }
+            }
+            item { Spacer(Modifier.height(16.dp)) }
         }
-        ui.seleccionado?.let { detalle ->
-            item {
-                DetalleSiniestroPanel(
-                    d = detalle,
-                    mensaje = ui.mensaje,
-                    onGuardarEstado = { nuevoEstado -> viewModel.guardarEstado(nuevoEstado) },
-                    onEnviarComentario = { nuevoComentario -> viewModel.guardarComentario(nuevoComentario) },
-                    onSolicitarDocumento = viewModel::solicitarDocumento
-                )
-            }
-        }
-        item { Spacer(Modifier.height(16.dp)) }
     }
 }
 
@@ -121,11 +124,11 @@ private fun TarjetaResumen(titulo: String, valor: Int, color: Color, modifier: M
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(titulo, fontSize = 12.sp)
+            Text(titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(valor.toString(), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = color)
         }
     }
@@ -141,7 +144,8 @@ private fun FilaSiniestro(
         modifier = Modifier.fillMaxWidth().clickable { onClick(s.numero) },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (seleccionada) Color(0xFFE3F2FD) else Color.White
+            containerColor = if (seleccionada) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            else MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
@@ -150,9 +154,9 @@ private fun FilaSiniestro(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(Modifier.weight(1f)) {
-                Text(s.numero, fontWeight = FontWeight.Bold, color = Primario)
-                Text(s.cliente, fontSize = 13.sp)
-                Text("${s.tipo} · ${s.fecha}", fontSize = 12.sp)
+                Text(s.numero, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(s.cliente, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("${s.tipo} · ${s.fecha}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             EstadoChip(s.estado)
         }

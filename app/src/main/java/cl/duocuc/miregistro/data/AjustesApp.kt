@@ -1,4 +1,4 @@
-// Archivo NUEVO: app/src/main/java/cl/duocuc/miregistro/data/AjustesApp.kt
+
 package cl.duocuc.miregistro.data
 
 import android.content.Context
@@ -12,7 +12,7 @@ import androidx.core.content.edit
 import java.io.File
 import java.io.FileOutputStream
 
-// Modo oscuro: el estado vive aquí y MainActivity lo observa
+
 object AjustesTema {
     private const val PREFS = "ajustes"
     private const val CLAVE_OSCURO = "modo_oscuro"
@@ -33,7 +33,7 @@ object AjustesTema {
     }
 }
 
-// Avatar: color de las iniciales y foto opcional (galería o cámara), por usuario
+
 class AvatarStore(context: Context) {
 
     private val appContext = context.applicationContext
@@ -56,7 +56,7 @@ class AvatarStore(context: Context) {
         archivo(idUsuario).delete()
     }
 
-    // Foto sacada con la cámara (miniatura en Bitmap)
+
     fun guardarFoto(idUsuario: Long, bitmap: Bitmap) {
         val lado = minOf(bitmap.width, bitmap.height)
         val x = (bitmap.width - lado) / 2
@@ -68,7 +68,6 @@ class AvatarStore(context: Context) {
         }
     }
 
-    // Foto elegida de la galería
     fun guardarFotoDesdeUri(idUsuario: Long, uri: Uri): Boolean {
         return try {
             val limites = BitmapFactory.Options().apply { inJustDecodeBounds = true }

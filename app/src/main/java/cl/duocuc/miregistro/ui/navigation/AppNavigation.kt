@@ -25,9 +25,11 @@ import cl.duocuc.miregistro.ui.screens.AdminPanelScreen
 import cl.duocuc.miregistro.ui.screens.ConsultaSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.DetalleSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.EditarPerfilScreen
+import cl.duocuc.miregistro.ui.screens.EditarPerfilStaffScreen
 import cl.duocuc.miregistro.ui.screens.InicioAseguradoScreen
 import cl.duocuc.miregistro.ui.screens.LoginScreen
 import cl.duocuc.miregistro.ui.screens.NuevaContrasenaScreen
+import cl.duocuc.miregistro.ui.screens.PanelAnalistaScreen
 import cl.duocuc.miregistro.ui.screens.PanelLiquidadorScreen
 import cl.duocuc.miregistro.ui.screens.RecuperarClaveScreen
 import cl.duocuc.miregistro.ui.screens.RegistroScreen
@@ -62,6 +64,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     val destino = when (usuario.rolNombre) {
                         "ADMIN" -> "admin/${usuario.id}"
                         "LIQUIDADOR" -> "panel/${usuario.id}"
+                        "ANALISTA" -> "analista/${usuario.id}"
                         "ASEGURADO" -> "consulta/${usuario.id}"
                         else -> "home_temporal"
                     }
@@ -107,6 +110,11 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val id = entry.arguments?.getLong("id") ?: 0L
             AdminPanelScreen(
                 idAdmin = id,
+                onEditarPerfil = { idUsuario ->
+                    navController.navigate("editar_perfil_staff/$idUsuario") {
+                        launchSingleTop = true
+                    }
+                },
                 onCerrarSesion = {
                     bienvenidaMostrada = false
                     navController.navigate("login") {
@@ -123,10 +131,53 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val id = entry.arguments?.getLong("id") ?: 0L
             PanelLiquidadorScreen(
                 idLiquidador = id,
+                onEditarPerfil = { idUsuario ->
+                    navController.navigate("editar_perfil_staff/$idUsuario") {
+                        launchSingleTop = true
+                    }
+                },
                 onCerrarSesion = {
                     bienvenidaMostrada = false
                     navController.navigate("login") {
-                        popUpTo("login") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "analista/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { entry ->
+            val id = entry.arguments?.getLong("id") ?: 0L
+            PanelAnalistaScreen(
+                idAnalista = id,
+                onEditarPerfil = { idUsuario ->
+                    navController.navigate("editar_perfil_staff/$idUsuario") {
+                        launchSingleTop = true
+                    }
+                },
+                onCerrarSesion = {
+                    bienvenidaMostrada = false
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "editar_perfil_staff/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { entry ->
+            val idUsuario = entry.arguments?.getLong("id") ?: 0L
+            EditarPerfilStaffScreen(
+                idUsuario = idUsuario,
+                onVolver = { navController.popBackStack() },
+                onCerrarSesion = {
+                    bienvenidaMostrada = false
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -173,6 +224,11 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 onVolver = { navController.popBackStack() },
                 onVerMisSiniestros = {
                     navController.navigate("inicio/$idUsuario") {
+                        launchSingleTop = true
+                    }
+                },
+                onConsultarSiniestro = {
+                    navController.navigate("consulta/$idUsuario") {
                         launchSingleTop = true
                     }
                 },

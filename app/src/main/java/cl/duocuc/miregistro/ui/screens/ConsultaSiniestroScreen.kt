@@ -34,7 +34,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,11 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.data.UsuarioDbHelper
-import cl.duocuc.miregistro.ui.components.MiRegistroTopBar
-import cl.duocuc.miregistro.ui.theme.FondoClaro
-import cl.duocuc.miregistro.ui.theme.GrisCampo
-import cl.duocuc.miregistro.ui.theme.Primario
-import cl.duocuc.miregistro.ui.theme.PrimarioClaro
+import cl.duocuc.miregistro.ui.components.ContenedorConMenuLateral
 import cl.duocuc.miregistro.viewmodel.ConsultaSiniestroViewModel
 
 @Composable
@@ -87,18 +82,13 @@ fun ConsultaSiniestroScreen(
         }
     }
 
-    Scaffold(
-        containerColor = FondoClaro,
-        topBar = {
-            MiRegistroTopBar(
-                titulo = "MiRegistro",
-                usuario = usuario,
-                mostrarVolver = false,
-                onVerMisSiniestros = onVerMisSiniestros,
-                onEditarPerfil = onEditarPerfil,
-                onCerrarSesion = onCerrarSesion
-            )
-        }
+    ContenedorConMenuLateral(
+        idUsuario = idUsuario,
+        titulo = "Consultar siniestro",
+        rutaActual = "consulta",
+        onIrInicioAsegurado = onVerMisSiniestros,
+        onEditarPerfil = onEditarPerfil,
+        onCerrarSesion = onCerrarSesion
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -115,13 +105,13 @@ fun ConsultaSiniestroScreen(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(PrimarioClaro.copy(alpha = 0.45f)),
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
-                    tint = Primario,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -131,13 +121,13 @@ fun ConsultaSiniestroScreen(
                     text = "Consulta tu Siniestro",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1C1B22)
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Ingresa el código de seguimiento asignado para revisar el estado, etapas y observaciones.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF5F6368),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
             }
@@ -145,7 +135,7 @@ fun ConsultaSiniestroScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
                 Column(
@@ -158,7 +148,7 @@ fun ConsultaSiniestroScreen(
                         text = "N° de Siniestro",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = Primario,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
@@ -188,9 +178,9 @@ fun ConsultaSiniestroScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = GrisCampo,
-                            unfocusedContainerColor = GrisCampo,
-                            focusedBorderColor = Primario,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = Color.Transparent
                         ),
                         keyboardOptions = KeyboardOptions(
@@ -206,7 +196,7 @@ fun ConsultaSiniestroScreen(
                     Button(
                         onClick = viewModel::buscar,
                         shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Primario),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
@@ -221,7 +211,7 @@ fun ConsultaSiniestroScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
@@ -234,7 +224,7 @@ fun ConsultaSiniestroScreen(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = Primario,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -242,21 +232,21 @@ fun ConsultaSiniestroScreen(
                             text = "¿No recuerdas tu código?",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = Color(0xFF1C1B22)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
                     Text(
                         text = "Actualmente tienes ${resumen.total} siniestro(s) registrado(s) (${resumen.enProceso} en proceso). Puedes revisarlos directamente en tu historial.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF5F6368)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     OutlinedButton(
                         onClick = onVerMisSiniestros,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, Primario),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Primario),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.List, contentDescription = null)
@@ -282,7 +272,7 @@ fun ConsultaSiniestroScreen(
             },
             confirmButton = {
                 TextButton(onClick = onBienvenidaMostrada) {
-                    Text("Continuar", color = Primario, fontWeight = FontWeight.Bold)
+                    Text("Continuar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
         )

@@ -1,6 +1,5 @@
 package cl.duocuc.miregistro.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +10,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
@@ -26,7 +26,10 @@ private val EsquemaOscuro = darkColorScheme(
     background = FondoOscuro,
     onBackground = TextoClaro,
     surface = SuperficieOscura,
-    onSurface = TextoClaro
+    onSurface = TextoClaro,
+    surfaceVariant = Color(0xFF273549),
+    onSurfaceVariant = Color(0xFFCBD5E1),
+    outline = Color(0xFF64748B)
 )
 
 private val EsquemaClaro = lightColorScheme(
@@ -41,9 +44,12 @@ private val EsquemaClaro = lightColorScheme(
     background = FondoClaro,
     onBackground = TextoOscuro,
     surface = SuperficieClara,
-    onSurface = TextoOscuro
+    onSurface = TextoOscuro,
+    surfaceVariant = Color(0xFFE2E8F0),
+    onSurfaceVariant = Color(0xFF475569),
+    outline = Color(0xFF94A3B8)
 )
-//border-radius
+
 private val Formas = Shapes(
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),
@@ -53,7 +59,6 @@ private val Formas = Shapes(
 @Composable
 fun MiRegistroTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -62,7 +67,6 @@ fun MiRegistroTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> EsquemaOscuro
         else -> EsquemaClaro
     }

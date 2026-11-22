@@ -34,14 +34,14 @@ fun DetalleSiniestroScreen(
     onAdjuntarEvidencia: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colorFondo = colorResource(id = R.color.fondo)
-    val colorTextPrincipal = colorResource(id = R.color.texto_primario)
-    val colorTextSecundario = colorResource(id = R.color.texto_secundario)
+    val colorFondo = MaterialTheme.colorScheme.background
+    val colorTextPrincipal = MaterialTheme.colorScheme.onBackground
+    val colorTextSecundario = MaterialTheme.colorScheme.onSurfaceVariant
 
     val colorActual = colorResource(id = R.color.estado_actual)
     val colorCompletado = colorResource(id = R.color.estado_completado)
     val colorPendiente = colorResource(id = R.color.estado_pendiente)
-    val colorLinea = colorResource(id = R.color.linea_tiempo)
+    val colorLinea = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
 
     Scaffold(
         topBar = {
@@ -77,13 +77,11 @@ fun DetalleSiniestroScreen(
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-
-            // Tarjeta principal
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.superficie)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(
@@ -127,7 +125,6 @@ fun DetalleSiniestroScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = colorFondo)
 
-                    // Fecha de última actualización
                     Text(
                         text = "Última actualización · ${siniestro.fechaUltimaActualizacion}",
                         fontSize = 11.sp,
@@ -140,9 +137,9 @@ fun DetalleSiniestroScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFEFF6FF)
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
                             ),
-                            border = BorderStroke(1.dp, Color(0xFFBFDBFE))
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                         ) {
                             Row(
                                 modifier = Modifier.padding(14.dp),
@@ -151,7 +148,7 @@ fun DetalleSiniestroScreen(
                                 Icon(
                                     imageVector = Icons.Default.Info,
                                     contentDescription = null,
-                                    tint = Color(0xFF2196F3),
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp).padding(top = 2.dp)
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
@@ -160,13 +157,13 @@ fun DetalleSiniestroScreen(
                                         text = "Observación del liquidador:",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1E40AF)
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = siniestro.comentario,
                                         fontSize = 13.sp,
-                                        color = Color(0xFF1E3A8A)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -175,7 +172,6 @@ fun DetalleSiniestroScreen(
                 }
             }
 
-            // 2. Seguimiento del caso (Línea de tiempo)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Seguimiento del caso", fontSize = 18.sp, color = colorTextPrincipal, fontWeight = FontWeight.Bold)
                 Text("Consulta el avance de tu siniestro en tiempo real", fontSize = 12.sp, color = colorTextSecundario)
@@ -228,7 +224,6 @@ fun DetalleSiniestroScreen(
                                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color.White))
                                 }
                             }
-                            // Sintaxis corregida correctamente aquí
                             if (index < etapas.size - 1) {
                                 Box(modifier = Modifier.width(2.dp).weight(1f).background(colorLinea))
                             }
@@ -257,12 +252,11 @@ fun DetalleSiniestroScreen(
                 }
             }
 
-            // 3. Tarjeta de Adjuntar Evidencia
             Card(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
-                colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.contenedor_primario)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -287,7 +281,7 @@ fun DetalleSiniestroScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = onAdjuntarEvidencia,
-                        colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.primario)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                     ) {

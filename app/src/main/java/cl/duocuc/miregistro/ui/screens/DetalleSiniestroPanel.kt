@@ -54,13 +54,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cl.duocuc.miregistro.data.AjustesTema
 import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.model.DetalleSiniestro
-import cl.duocuc.miregistro.ui.theme.Primario
-
-private val Verde = Color(0xFF15803D)
-private val Naranja = Color(0xFFF59E0B)
-private val Gris = Color(0xFF9CA3AF)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,17 +78,39 @@ fun DetalleSiniestroPanel(
     }
     val estaCerrado = d.estado.equals("Cerrado", ignoreCase = true)
 
+    val colorPrincipal = MaterialTheme.colorScheme.primary
+    val colorVerde = if (AjustesTema.oscuro) Color(0xFF4ADE80) else Color(0xFF15803D)
+    val colorNaranja = if (AjustesTema.oscuro) Color(0xFFFBBF24) else Color(0xFFD97706)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Detalle del siniestro", fontSize = 12.sp)
-            Text(d.numero, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Primario)
-            Text("${d.cliente}  ·  Placa ${d.placa}  ·  Prioridad ${d.prioridad}", fontSize = 13.sp)
+            Text(
+                text = "Detalle del siniestro",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = d.numero,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = colorPrincipal
+            )
+            Text(
+                text = "${d.cliente}  ·  Placa ${d.placa}  ·  Prioridad ${d.prioridad}",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
 
-            Text("Estado actual", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(
+                text = "Estado actual",
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             ExposedDropdownMenuBox(
                 expanded = expandido && !estaCerrado,
                 onExpandedChange = { if (!estaCerrado) expandido = it }
@@ -104,25 +122,29 @@ fun DetalleSiniestroPanel(
                     enabled = !estaCerrado,
                     trailingIcon = {
                         if (estaCerrado) {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = Gris)
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         } else {
                             ExposedDropdownMenuDefaults.TrailingIcon(expandido)
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primario,
-                        unfocusedBorderColor = Primario.copy(alpha = 0.6f)
+                        focusedBorderColor = colorPrincipal,
+                        unfocusedBorderColor = colorPrincipal.copy(alpha = 0.6f)
                     ),
                     modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = expandido && !estaCerrado,
                     onDismissRequest = { expandido = false },
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 ) {
                     estadosPermitidos.forEach { e ->
                         DropdownMenuItem(
-                            text = { Text(e) },
+                            text = { Text(e, color = MaterialTheme.colorScheme.onSurface) },
                             onClick = {
                                 estado = e
                                 expandido = false
@@ -139,42 +161,56 @@ fun DetalleSiniestroPanel(
                     "Solo puedes mantener o avanzar a etapas posteriores."
                 },
                 fontSize = 11.sp,
-                color = Color(0xFF5F6368)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Button(
                 onClick = { onGuardarEstado(estado) },
                 enabled = !estaCerrado && estado != d.estado,
                 modifier = Modifier.fillMaxWidth().height(44.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primario)
+                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
             ) {
                 Text("Guardar cambios de estado", fontWeight = FontWeight.Bold)
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            Text("Documentos recibidos", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(
+                text = "Documentos recibidos",
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             d.documentos.forEach { doc ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = if (doc.recibido) Icons.Filled.CheckCircle else Icons.Filled.Warning,
                         contentDescription = null,
-                        tint = if (doc.recibido) Verde else Naranja,
+                        tint = if (doc.recibido) colorVerde else colorNaranja,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = if (doc.recibido) doc.nombre else "Falta documento: ${doc.nombre}",
-                        color = if (doc.recibido) Verde else Naranja,
+                        color = if (doc.recibido) colorVerde else colorNaranja,
                         fontSize = 13.sp
                     )
                 }
             }
 
-            Text("Evidencias adjuntas por el asegurado", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(
+                text = "Evidencias adjuntas por el asegurado",
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
 
             if (d.evidencias.isEmpty()) {
-                Text(text = "No se han adjuntado fotos ni evidencias aún.", fontSize = 12.sp, color = Gris)
+                Text(
+                    text = "No se han adjuntado fotos ni evidencias aún.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             } else {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     items(d.evidencias) { ev ->
@@ -194,7 +230,7 @@ fun DetalleSiniestroPanel(
                             Card(
                                 modifier = Modifier.size(90.dp),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6))
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxSize().padding(8.dp),
@@ -204,14 +240,14 @@ fun DetalleSiniestroPanel(
                                     Icon(
                                         Icons.Default.Description,
                                         contentDescription = "Documento",
-                                        tint = Color(0xFF4B5563),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(32.dp)
                                     )
                                     Spacer(Modifier.height(4.dp))
                                     Text(
                                         text = ev.nombre,
                                         fontSize = 10.sp,
-                                        color = Color(0xFF4B5563),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center
@@ -223,7 +259,12 @@ fun DetalleSiniestroPanel(
                 }
             }
 
-            Text("Comentario para el usuario", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(
+                text = "Comentario para el usuario",
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             OutlinedTextField(
                 value = comentario,
                 onValueChange = {
@@ -233,8 +274,8 @@ fun DetalleSiniestroPanel(
                 minLines = 3,
                 isError = errorComentario,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primario,
-                    unfocusedBorderColor = Primario.copy(alpha = 0.6f)
+                    focusedBorderColor = colorPrincipal,
+                    unfocusedBorderColor = colorPrincipal.copy(alpha = 0.6f)
                 ),
                 supportingText = {
                     if (errorComentario) {
@@ -255,15 +296,15 @@ fun DetalleSiniestroPanel(
                             mensajeExitoComentario = true
                         }
                     },
-                    border = BorderStroke(1.dp, Primario),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Primario),
+                    border = BorderStroke(1.dp, colorPrincipal),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
                     modifier = Modifier.weight(1f)
                 ) { Text("Enviar comentario", fontSize = 12.sp) }
 
                 OutlinedButton(
                     onClick = { onSolicitarDocumento("Presupuesto de reparación") },
-                    border = BorderStroke(1.dp, Primario),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Primario),
+                    border = BorderStroke(1.dp, colorPrincipal),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
                     modifier = Modifier.weight(1f)
                 ) { Text("Solicitar documento", fontSize = 12.sp) }
             }
@@ -272,15 +313,18 @@ fun DetalleSiniestroPanel(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFDCFCE7), shape = RoundedCornerShape(8.dp))
+                        .background(
+                            color = if (AjustesTema.oscuro) Color(0xFF14532D) else Color(0xFFDCFCE7),
+                            shape = RoundedCornerShape(8.dp)
+                        )
                         .padding(12.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Verde, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = colorVerde, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             text = mensaje ?: "Guardado correctamente",
-                            color = Verde,
+                            color = colorVerde,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )

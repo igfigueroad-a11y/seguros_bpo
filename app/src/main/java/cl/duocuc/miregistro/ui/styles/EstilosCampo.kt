@@ -10,7 +10,7 @@ import cl.duocuc.miregistro.ui.theme.Dimens
 import cl.duocuc.miregistro.ui.theme.GrisDeshabilitado
 
 object EstilosCampo {
-    val forma: Shape = RoundedCornerShape(Dimens.radioCampo) //border-radius
+    val forma: Shape = RoundedCornerShape(Dimens.radioCampo)
     @Composable
     fun colores(): TextFieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.primary,
