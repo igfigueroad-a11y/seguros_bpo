@@ -50,7 +50,10 @@ fun EditarPerfilScreen(
 
     var claveActual by remember { mutableStateOf("") }
     var claveNueva by remember { mutableStateOf("") }
-    var claveVisible by remember { mutableStateOf(false) }
+    var claveConfirmar by remember { mutableStateOf("") }
+    var visibleActual by remember { mutableStateOf(false) }
+    var visibleNueva by remember { mutableStateOf(false) }
+    var visibleConfirmar by remember { mutableStateOf(false) }
 
     var mensajeError by remember { mutableStateOf<String?>(null) }
     var mensajeExito by remember { mutableStateOf<String?>(null) }
@@ -128,8 +131,8 @@ fun EditarPerfilScreen(
                             mensajeExito = null
                         },
                         etiqueta = "Contraseña actual",
-                        visible = claveVisible,
-                        onAlternarVisible = { claveVisible = !claveVisible }
+                        visible = visibleActual,
+                        onAlternarVisible = { visibleActual = !visibleActual }
                     )
 
                     CampoContrasena(
@@ -140,8 +143,20 @@ fun EditarPerfilScreen(
                             mensajeExito = null
                         },
                         etiqueta = "Nueva contraseña",
-                        visible = claveVisible,
-                        onAlternarVisible = { claveVisible = !claveVisible }
+                        visible = visibleNueva,
+                        onAlternarVisible = { visibleNueva = !visibleNueva }
+                    )
+
+                    CampoContrasena(
+                        valor = claveConfirmar,
+                        onValorCambia = {
+                            claveConfirmar = it
+                            mensajeError = null
+                            mensajeExito = null
+                        },
+                        etiqueta = "Confirmar nueva contraseña",
+                        visible = visibleConfirmar,
+                        onAlternarVisible = { visibleConfirmar = !visibleConfirmar }
                     )
 
                     mensajeError?.let {
@@ -177,7 +192,17 @@ fun EditarPerfilScreen(
                                 return@BotonPrincipal
                             }
 
-                            if (claveActual.isNotBlank() || claveNueva.isNotBlank()) {
+                            if (claveActual.isNotBlank() || claveNueva.isNotBlank() || claveConfirmar.isNotBlank()) {
+                                if (claveActual.isBlank()) {
+                                    mensajeError = "Ingresa tu contraseña actual"
+                                    return@BotonPrincipal
+                                }
+
+                                if (claveNueva != claveConfirmar) {
+                                    mensajeError = "Las contraseñas nuevas no coinciden"
+                                    return@BotonPrincipal
+                                }
+
                                 val esValida = claveNueva.length >= 8 &&
                                         claveNueva.any { it.isUpperCase() } &&
                                         claveNueva.any { it.isDigit() } &&
@@ -195,6 +220,7 @@ fun EditarPerfilScreen(
                                 }
                                 claveActual = ""
                                 claveNueva = ""
+                                claveConfirmar = ""
                             }
 
                             usuario = dbHelper.buscarPorId(idUsuario)

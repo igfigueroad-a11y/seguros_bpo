@@ -5,6 +5,8 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.graphics.Bitmap
+import android.net.Uri
 import cl.duocuc.miregistro.model.AlertaDocumento
 import cl.duocuc.miregistro.model.DetalleSiniestro
 import cl.duocuc.miregistro.model.Documento
@@ -16,6 +18,8 @@ import cl.duocuc.miregistro.model.SiniestroAsegurado
 import cl.duocuc.miregistro.model.SiniestroResumen
 import cl.duocuc.miregistro.model.Usuario
 import cl.duocuc.miregistro.ui.components.BANCO_PREGUNTAS_SEGURIDAD
+import java.io.File
+import java.io.FileOutputStream
 import java.security.MessageDigest
 
 data class SiniestroAdmin(
@@ -39,12 +43,23 @@ data class SolicitudRegistro(
     val cantidadSiniestros: Int
 )
 
+data class SolicitudCambioEstado(
+    val numeroSiniestro: String,
+    val tipoSiniestro: String,
+    val aseguradoNombre: String,
+    val liquidadorNombre: String,
+    val estadoActual: String,
+    val estadoSolicitado: String
+)
+
 class UsuarioDbHelper(context: Context) :
     SQLiteOpenHelper(context, NOMBRE_BD, null, VERSION_BD) {
 
+    private val appContext = context.applicationContext
+
     companion object {
         private const val NOMBRE_BD = "seguimiento_siniestros.db"
-        private const val VERSION_BD = 10
+        private const val VERSION_BD = 13
 
         val ORDEN_ESTADOS = listOf(
             "Recibido",
@@ -86,6 +101,7 @@ class UsuarioDbHelper(context: Context) :
         private const val SIN_DESCRIPCION = "descripcion"
         private const val SIN_FECHA = "fecha"
         private const val SIN_ESTADO = "estado"
+        private const val SIN_ESTADO_SOLICITADO = "estado_solicitado"
         private const val SIN_PLACA = "placa"
         private const val SIN_PRIORIDAD = "prioridad"
         private const val SIN_DOCS_PENDIENTES = "docs_pendientes"
@@ -104,7 +120,7 @@ class UsuarioDbHelper(context: Context) :
         private const val EVI_SINIESTRO = "numero_siniestro"
         private const val EVI_NOMBRE = "nombre_archivo"
         private const val EVI_ES_IMAGEN = "es_imagen"
-        private const val EVI_IMAGEN = "imagen_blob"
+        private const val EVI_URL = "url_archivo"
         private const val EVI_FECHA = "fecha_subida"
 
         private const val CLAVE_DEMO = "Clave123"
@@ -139,6 +155,7 @@ class UsuarioDbHelper(context: Context) :
                     "$SIN_DESCRIPCION TEXT, " +
                     "$SIN_FECHA TEXT NOT NULL, " +
                     "$SIN_ESTADO TEXT NOT NULL, " +
+                    "$SIN_ESTADO_SOLICITADO TEXT, " +
                     "$SIN_PLACA TEXT, " +
                     "$SIN_PRIORIDAD TEXT NOT NULL DEFAULT 'Media', " +
                     "$SIN_DOCS_PENDIENTES INTEGER NOT NULL DEFAULT 0, " +
@@ -159,12 +176,12 @@ class UsuarioDbHelper(context: Context) :
                     "$EVI_SINIESTRO TEXT NOT NULL REFERENCES $TABLA_SINIESTROS($SIN_NUMERO), " +
                     "$EVI_NOMBRE TEXT NOT NULL, " +
                     "$EVI_ES_IMAGEN INTEGER NOT NULL, " +
-                    "$EVI_IMAGEN BLOB NOT NULL, " +
+                    "$EVI_URL TEXT NOT NULL, " +
                     "$EVI_FECHA DATETIME DEFAULT CURRENT_TIMESTAMP)"
 
         private const val SQL_PRECARGAR_ROLES =
             "INSERT INTO $TABLA_ROLES ($ROL_ID, $ROL_NOMBRE) VALUES " +
-                    "(1, 'ASEGURADO'), (2, 'LIQUIDADOR'), (3, 'ANALISTA'), (4, 'ADMIN')"
+                    "(1, 'ASEGURADO'), (2, 'LIQUIDADOR'), (3, 'ANALISTA')"
 
         private const val SQL_SELECT_USUARIOS =
             "SELECT u.*, r.$ROL_NOMBRE AS $ROL_NOMBRE " +
@@ -195,6 +212,7 @@ class UsuarioDbHelper(context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        obtenerCarpetaEvidencias().listFiles()?.forEach { it.delete() }
         db.execSQL("DROP TABLE IF EXISTS $TABLA_EVIDENCIA")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_DOCUMENTOS")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_SINIESTROS")
@@ -214,8 +232,7 @@ class UsuarioDbHelper(context: Context) :
             arrayOf("Valentina Soto Muñoz", "19205884-8", "vale.soto@correo.ejemplo", 1L, "Luna", "Concepcion", "Inception"),
             arrayOf("Paulina Fernández Ruiz", "11111111-1", "paulina.fernandez@andes-bpo.ejemplo", 2L, "Max", "Temuco", "Matrix"),
             arrayOf("Matías Gallardo Silva", "12222222-2", "matias.gallardo@andes-bpo.ejemplo", 2L, "Rocky", "La Serena", "Gladiador"),
-            arrayOf("Natalia Reyes Campos", "13333333-3", "natalia.reyes@andes-bpo.ejemplo", 3L, "Kira", "Antofagasta", "Interstellar"),
-            arrayOf("Administrador General", "10000000-0", "admin@andes-bpo.ejemplo", 4L, "Rex", "Santiago", "Matrix")
+            arrayOf("Natalia Reyes Campos", "13333333-3", "natalia.reyes@andes-bpo.ejemplo", 3L, "Kira", "Antofagasta", "Interstellar")
         )
         val hash = hashearClave(CLAVE_DEMO)
         ejemplos.forEach { e ->
@@ -255,6 +272,7 @@ class UsuarioDbHelper(context: Context) :
                 put(SIN_DESCRIPCION, e[2] as String)
                 put(SIN_FECHA, e[3] as String)
                 put(SIN_ESTADO, e[4] as String)
+                putNull(SIN_ESTADO_SOLICITADO)
                 put(SIN_PLACA, e[5] as String)
                 put(SIN_PRIORIDAD, e[6] as String)
                 put(SIN_DOCS_PENDIENTES, e[7] as Int)
@@ -284,20 +302,85 @@ class UsuarioDbHelper(context: Context) :
         }
     }
 
-    fun guardarEvidencia(numeroSiniestro: String, nombre: String, esImagen: Boolean, imagenBlob: ByteArray): Boolean {
+    private fun obtenerCarpetaEvidencias(): File {
+        val carpeta = File(appContext.filesDir, "evidencias")
+        if (!carpeta.exists()) {
+            carpeta.mkdirs()
+        }
+        return carpeta
+    }
+
+    private fun crearArchivoDestino(numeroSiniestro: String, nombreOriginal: String): File {
+        val nombreSeguro = nombreOriginal.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+        return File(
+            obtenerCarpetaEvidencias(),
+            "${numeroSiniestro}_${System.currentTimeMillis()}_$nombreSeguro"
+        )
+    }
+
+    private fun registrarUrlEvidencia(
+        numeroSiniestro: String,
+        nombre: String,
+        esImagen: Boolean,
+        archivoDestino: File
+    ): String? {
+        val urlArchivo = Uri.fromFile(archivoDestino).toString()
         val valores = ContentValues().apply {
             put(EVI_SINIESTRO, numeroSiniestro)
             put(EVI_NOMBRE, nombre)
             put(EVI_ES_IMAGEN, if (esImagen) 1 else 0)
-            put(EVI_IMAGEN, imagenBlob)
+            put(EVI_URL, urlArchivo)
         }
-        return writableDatabase.insert(TABLA_EVIDENCIA, null, valores) != -1L
+        return if (writableDatabase.insert(TABLA_EVIDENCIA, null, valores) != -1L) {
+            urlArchivo
+        } else {
+            archivoDestino.delete()
+            null
+        }
+    }
+
+    fun guardarEvidenciaDesdeUri(
+        numeroSiniestro: String,
+        nombre: String,
+        esImagen: Boolean,
+        uriOrigen: Uri
+    ): String? {
+        return try {
+            val archivoDestino = crearArchivoDestino(numeroSiniestro, nombre)
+            appContext.contentResolver.openInputStream(uriOrigen)?.use { input ->
+                FileOutputStream(archivoDestino).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return null
+
+            registrarUrlEvidencia(numeroSiniestro, nombre, esImagen, archivoDestino)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun guardarEvidenciaDesdeBitmap(
+        numeroSiniestro: String,
+        nombre: String,
+        bitmap: Bitmap
+    ): String? {
+        return try {
+            val archivoDestino = crearArchivoDestino(numeroSiniestro, nombre)
+            FileOutputStream(archivoDestino).use { output ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, output)
+            }
+            registrarUrlEvidencia(numeroSiniestro, nombre, esImagen = true, archivoDestino = archivoDestino)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     fun obtenerEvidencias(numeroSiniestro: String): List<EvidenciaArchivo> {
         val lista = mutableListOf<EvidenciaArchivo>()
         readableDatabase.rawQuery(
-            "SELECT $EVI_NOMBRE, $EVI_ES_IMAGEN, $EVI_IMAGEN FROM $TABLA_EVIDENCIA WHERE $EVI_SINIESTRO = ?",
+            "SELECT $EVI_NOMBRE, $EVI_ES_IMAGEN, $EVI_URL FROM $TABLA_EVIDENCIA WHERE $EVI_SINIESTRO = ?",
             arrayOf(numeroSiniestro)
         ).use { cursor ->
             while (cursor.moveToNext()) {
@@ -305,7 +388,7 @@ class UsuarioDbHelper(context: Context) :
                     EvidenciaArchivo(
                         nombre = cursor.getString(0),
                         esImagen = cursor.getInt(1) == 1,
-                        bytes = cursor.getBlob(2)
+                        urlArchivo = cursor.getString(2)
                     )
                 )
             }
@@ -526,6 +609,23 @@ class UsuarioDbHelper(context: Context) :
         return lista
     }
 
+    fun mapaEstadosSolicitadosLiquidador(idLiquidador: Long): Map<String, String> {
+        val mapa = mutableMapOf<String, String>()
+        readableDatabase.rawQuery(
+            "SELECT $SIN_NUMERO, $SIN_ESTADO_SOLICITADO FROM $TABLA_SINIESTROS " +
+                    "WHERE $SIN_LIQUIDADOR = ? AND $SIN_ESTADO_SOLICITADO IS NOT NULL",
+            arrayOf(idLiquidador.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                val sol = c.getString(1)
+                if (!sol.isNullOrBlank()) {
+                    mapa[c.getString(0)] = sol
+                }
+            }
+        }
+        return mapa
+    }
+
     fun resumenLiquidador(idLiquidador: Long): ResumenPanel =
         readableDatabase.rawQuery(
             "SELECT COUNT(*), " +
@@ -546,7 +646,7 @@ class UsuarioDbHelper(context: Context) :
             while (c.moveToNext()) { docs.add(Documento(c.getString(0), c.getInt(1) == 1)) }
         }
 
-        val evidenciasBlobs = obtenerEvidencias(numero)
+        val evidencias = obtenerEvidencias(numero)
 
         return db.rawQuery(
             "SELECT s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_PLACA, s.$SIN_PRIORIDAD, s.$SIN_ESTADO, s.$SIN_COMENTARIO " +
@@ -563,27 +663,102 @@ class UsuarioDbHelper(context: Context) :
                     estado = c.getString(4),
                     comentario = c.getString(5) ?: "",
                     documentos = docs,
-                    evidencias = evidenciasBlobs
+                    evidencias = evidencias
                 )
             } else null
         }
     }
 
-    fun actualizarEstadoSiniestro(numero: String, estado: String): Boolean {
+    fun solicitarCambioEstadoSiniestro(numero: String, nuevoEstado: String): Boolean {
         val actual = readableDatabase.rawQuery(
             "SELECT $SIN_ESTADO FROM $TABLA_SINIESTROS WHERE $SIN_NUMERO = ?",
             arrayOf(numero)
         ).use { if (it.moveToFirst()) it.getString(0) else null } ?: return false
 
         val indiceActual = ORDEN_ESTADOS.indexOfFirst { it.equals(actual, ignoreCase = true) }
-        val indiceNuevo = ORDEN_ESTADOS.indexOfFirst { it.equals(estado, ignoreCase = true) }
+        val indiceNuevo = ORDEN_ESTADOS.indexOfFirst { it.equals(nuevoEstado, ignoreCase = true) }
 
-        if (indiceNuevo == -1 || (indiceActual != -1 && indiceNuevo < indiceActual)) {
+        if (indiceNuevo == -1 || (indiceActual != -1 && indiceNuevo <= indiceActual)) {
             return false
         }
 
-        val valores = ContentValues().apply { put(SIN_ESTADO, estado) }
-        return writableDatabase.update(TABLA_SINIESTROS, valores, "$SIN_NUMERO = ?", arrayOf(numero)) > 0
+        val valores = ContentValues().apply {
+            put(SIN_ESTADO_SOLICITADO, nuevoEstado)
+        }
+        return writableDatabase.update(
+            TABLA_SINIESTROS,
+            valores,
+            "$SIN_NUMERO = ?",
+            arrayOf(numero)
+        ) > 0
+    }
+
+    fun listarSolicitudesCambioEstado(): List<SolicitudCambioEstado> {
+        val lista = mutableListOf<SolicitudCambioEstado>()
+        val sql = """
+            SELECT s.$SIN_NUMERO, s.$SIN_TIPO, a.$USU_NOMBRE,
+                   COALESCE(l.$USU_NOMBRE, 'Liquidador asignado'),
+                   s.$SIN_ESTADO, s.$SIN_ESTADO_SOLICITADO
+            FROM $TABLA_SINIESTROS s
+            INNER JOIN $TABLA_USUARIOS a ON s.$SIN_ASEGURADO = a.$USU_ID
+            LEFT JOIN $TABLA_USUARIOS l ON s.$SIN_LIQUIDADOR = l.$USU_ID
+            WHERE s.$SIN_ESTADO_SOLICITADO IS NOT NULL AND s.$SIN_ESTADO_SOLICITADO <> ''
+            ORDER BY s.$SIN_ID DESC
+        """.trimIndent()
+
+        readableDatabase.rawQuery(sql, null).use { c ->
+            while (c.moveToNext()) {
+                lista.add(
+                    SolicitudCambioEstado(
+                        numeroSiniestro = c.getString(0),
+                        tipoSiniestro = c.getString(1),
+                        aseguradoNombre = c.getString(2),
+                        liquidadorNombre = c.getString(3),
+                        estadoActual = c.getString(4),
+                        estadoSolicitado = c.getString(5)
+                    )
+                )
+            }
+        }
+        return lista
+    }
+
+    fun aprobarCambioEstado(idAnalista: Long, numeroSiniestro: String): String? {
+        if (!esAnalista(idAnalista)) return "No tienes permisos de analista para aprobar cambios de estado."
+
+        val nuevoEstado = readableDatabase.rawQuery(
+            "SELECT $SIN_ESTADO_SOLICITADO FROM $TABLA_SINIESTROS WHERE $SIN_NUMERO = ?",
+            arrayOf(numeroSiniestro)
+        ).use { if (it.moveToFirst()) it.getString(0) else null }
+
+        if (nuevoEstado.isNullOrBlank()) return "No existe una solicitud pendiente para este siniestro."
+
+        val valores = ContentValues().apply {
+            put(SIN_ESTADO, nuevoEstado)
+            putNull(SIN_ESTADO_SOLICITADO)
+        }
+        val filas = writableDatabase.update(
+            TABLA_SINIESTROS,
+            valores,
+            "$SIN_NUMERO = ?",
+            arrayOf(numeroSiniestro)
+        )
+        return if (filas > 0) null else "No se pudo aprobar el cambio de estado."
+    }
+
+    fun rechazarCambioEstado(idAnalista: Long, numeroSiniestro: String): String? {
+        if (!esAnalista(idAnalista)) return "No tienes permisos de analista para rechazar cambios de estado."
+
+        val valores = ContentValues().apply {
+            putNull(SIN_ESTADO_SOLICITADO)
+        }
+        val filas = writableDatabase.update(
+            TABLA_SINIESTROS,
+            valores,
+            "$SIN_NUMERO = ?",
+            arrayOf(numeroSiniestro)
+        )
+        return if (filas > 0) null else "No se pudo rechazar la solicitud."
     }
 
     fun actualizarComentarioSiniestro(numero: String, comentario: String): Boolean {

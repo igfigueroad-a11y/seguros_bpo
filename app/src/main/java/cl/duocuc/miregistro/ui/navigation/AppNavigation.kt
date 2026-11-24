@@ -21,7 +21,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.ui.screens.AdjuntarEvidenciaScreen
-import cl.duocuc.miregistro.ui.screens.AdminPanelScreen
 import cl.duocuc.miregistro.ui.screens.ConsultaSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.DetalleSiniestroScreen
 import cl.duocuc.miregistro.ui.screens.EditarPerfilScreen
@@ -62,7 +61,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 onLoginExitoso = { usuario ->
                     bienvenidaMostrada = false
                     val destino = when (usuario.rolNombre) {
-                        "ADMIN" -> "admin/${usuario.id}"
                         "LIQUIDADOR" -> "panel/${usuario.id}"
                         "ANALISTA" -> "analista/${usuario.id}"
                         "ASEGURADO" -> "consulta/${usuario.id}"
@@ -98,27 +96,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 onContrasenaActualizada = {
                     navController.navigate("login") {
                         popUpTo("nueva_contrasena/$correo") { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(
-            route = "admin/{id}",
-            arguments = listOf(navArgument("id") { type = NavType.LongType })
-        ) { entry ->
-            val id = entry.arguments?.getLong("id") ?: 0L
-            AdminPanelScreen(
-                idAdmin = id,
-                onEditarPerfil = { idUsuario ->
-                    navController.navigate("editar_perfil_staff/$idUsuario") {
-                        launchSingleTop = true
-                    }
-                },
-                onCerrarSesion = {
-                    bienvenidaMostrada = false
-                    navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -323,7 +300,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
 
         composable("home_temporal") {
-            PlaceholderPantalla("Home (Analista)") {}
+            PlaceholderPantalla("Rol no reconocido") {}
         }
     }
 }

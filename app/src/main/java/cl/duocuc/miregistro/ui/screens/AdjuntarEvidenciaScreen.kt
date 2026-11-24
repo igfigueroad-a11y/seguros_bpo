@@ -1,8 +1,12 @@
 package cl.duocuc.miregistro.ui.screens
 
+import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -30,8 +34,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import cl.duocuc.miregistro.data.UsuarioDbHelper
-import java.io.ByteArrayOutputStream
 
 data class ArchivoSeleccionado(
     val uri: Uri? = null,
@@ -53,10 +57,54 @@ fun AdjuntarEvidenciaScreen(
     val archivosSeleccionados = remember { mutableStateListOf<ArchivoSeleccionado>() }
     var guardadoExitoso by remember { mutableStateOf(false) }
 
+    val declaraPermisoCamara = remember {
+        try {
+            val info = context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_PERMISSIONS
+            )
+            info.requestedPermissions?.contains(Manifest.permission.CAMERA) == true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     val camaraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
             val nombre = "foto_camara_${System.currentTimeMillis()}.jpg"
             archivosSeleccionados.add(ArchivoSeleccionado(bitmap = bitmap, nombre = nombre, esImagen = true))
+        }
+    }
+
+    fun abrirCamaraSegura() {
+        try {
+            camaraLauncher.launch(null)
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(
+                context,
+                "No se encontró una app de cámara disponible en el dispositivo",
+                Toast.LENGTH_LONG
+            ).show()
+        } catch (_: SecurityException) {
+            Toast.makeText(
+                context,
+                "Permiso de cámara denegado por el sistema",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    val permisoCamaraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { concedido ->
+        if (concedido) {
+            abrirCamaraSegura()
+        } else {
+            Toast.makeText(
+                context,
+                "Debes conceder permiso de cámara para tomar fotografías",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -157,9 +205,10 @@ fun AdjuntarEvidenciaScreen(
                                     } else if (archivo.uri != null && archivo.esImagen) {
                                         val bitmapUri = remember(archivo.uri) {
                                             try {
-                                                val stream = contentResolver.openInputStream(archivo.uri)
-                                                BitmapFactory.decodeStream(stream)?.asImageBitmap()
-                                            } catch (e: Exception) {
+                                                contentResolver.openInputStream(archivo.uri)?.use { stream ->
+                                                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                                                }
+                                            } catch (_: Exception) {
                                                 null
                                             }
                                         }
@@ -200,7 +249,22 @@ fun AdjuntarEvidenciaScreen(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
-                    onClick = { camaraLauncher.launch(null) },
+                    onClick = {
+                        if (!declaraPermisoCamara) {
+                            abrirCamaraSegura()
+                        } else {
+                            val tienePermiso = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.CAMERA
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                            if (tienePermiso) {
+                                abrirCamaraSegura()
+                            } else {
+                                permisoCamaraLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 4.dp)
                 ) { Text("Cámara", fontSize = 11.sp) }
@@ -232,16 +296,18 @@ fun AdjuntarEvidenciaScreen(
                 Button(
                     onClick = {
                         archivosSeleccionados.forEach { archivo ->
-                            val bytes = if (archivo.bitmap != null) {
-                                val stream = ByteArrayOutputStream()
-                                archivo.bitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream)
-                                stream.toByteArray()
-                            } else if (archivo.uri != null) {
-                                contentResolver.openInputStream(archivo.uri)?.readBytes()
-                            } else null
-
-                            if (bytes != null) {
-                                db.guardarEvidencia(numeroSiniestro, archivo.nombre, archivo.esImagen, bytes)
+                            when {
+                                archivo.bitmap != null -> db.guardarEvidenciaDesdeBitmap(
+                                    numeroSiniestro = numeroSiniestro,
+                                    nombre = archivo.nombre,
+                                    bitmap = archivo.bitmap
+                                )
+                                archivo.uri != null -> db.guardarEvidenciaDesdeUri(
+                                    numeroSiniestro = numeroSiniestro,
+                                    nombre = archivo.nombre,
+                                    esImagen = archivo.esImagen,
+                                    uriOrigen = archivo.uri
+                                )
                             }
                         }
                         guardadoExitoso = true

@@ -1,6 +1,5 @@
 package cl.duocuc.miregistro.model
 
-
 val ESTADOS = listOf("Recibido", "En evaluación", "En liquidación", "Cerrado")
 
 data class SiniestroResumen(
@@ -8,7 +7,8 @@ data class SiniestroResumen(
     val cliente: String,
     val tipo: String,
     val estado: String,
-    val fecha: String
+    val fecha: String,
+    val estadoSolicitado: String? = null
 )
 
 data class ResumenPanel(
@@ -23,11 +23,10 @@ data class Documento(
     val recibido: Boolean
 )
 
-// NUEVA CLASE PARA SOPORTAR FOTOS Y DOCUMENTOS CON SUS NOMBRES
 data class EvidenciaArchivo(
     val nombre: String,
     val esImagen: Boolean,
-    val bytes: ByteArray
+    val urlArchivo: String
 )
 
 data class DetalleSiniestro(
@@ -38,7 +37,8 @@ data class DetalleSiniestro(
     val estado: String,
     val comentario: String,
     val documentos: List<Documento>,
-    val evidencias: List<EvidenciaArchivo> = emptyList(), // <-- ACTUALIZADO AQUÍ
+    val evidencias: List<EvidenciaArchivo> = emptyList(),
+    val estadoSolicitado: String? = null,
 )
 
 data class PanelUiState(

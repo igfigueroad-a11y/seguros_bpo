@@ -1,6 +1,5 @@
 package cl.duocuc.miregistro.ui.components
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,16 +19,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AssignmentInd
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -79,6 +83,8 @@ private data class OpcionMenuLateral(
     val ruta: String,
     val etiqueta: String,
     val icono: ImageVector,
+    val badge: Int = 0,
+    val colorBadge: Color = Color(0xFFD32F2F),
     val onClick: () -> Unit
 )
 
@@ -93,6 +99,19 @@ fun ContenedorConMenuLateral(
     onIrInicioAsegurado: () -> Unit = {},
     onConsultarSiniestro: () -> Unit = {},
     onIrPanelPrincipal: () -> Unit = {},
+    onIrSiniestrosAnalista: () -> Unit = {},
+    onIrCambiosEstadoAnalista: () -> Unit = {},
+    onIrSolicitudesCuentaAnalista: () -> Unit = {},
+    badgeSinAsignar: Int? = null,
+    badgeCambiosEstado: Int? = null,
+    badgeSolicitudesCuenta: Int? = null,
+    onIrTodosCasosLiquidador: (() -> Unit)? = null,
+    onIrActivosLiquidador: (() -> Unit)? = null,
+    onIrPendientesLiquidador: (() -> Unit)? = null,
+    onIrCerradosLiquidador: (() -> Unit)? = null,
+    badgeCasosLiquidador: Int? = null,
+    badgeActivosLiquidador: Int? = null,
+    badgePendientesLiquidador: Int? = null,
     onEditarPerfil: () -> Unit = {},
     accionesExtra: @Composable RowScope.() -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
@@ -126,23 +145,126 @@ fun ContenedorConMenuLateral(
     val correo = usuario?.correo ?: ""
     val rol = usuario?.rolNombre ?: "ASEGURADO"
 
+    // Contadores para Analista
+    val countSinAsignar = remember(idUsuario, version, rol, badgeSinAsignar) {
+        if (rol != "ANALISTA") 0
+        else badgeSinAsignar ?: db.todosLosSiniestrosAdmin().count { it.liquidadorId == null }
+    }
+    val countEstados = remember(idUsuario, version, rol, badgeCambiosEstado) {
+        if (rol != "ANALISTA") 0
+        else badgeCambiosEstado ?: db.listarSolicitudesCambioEstado().size
+    }
+    val countCuentas = remember(idUsuario, version, rol, badgeSolicitudesCuenta) {
+        if (rol != "ANALISTA") 0
+        else badgeSolicitudesCuenta ?: db.listarSolicitudesPendientes().size
+    }
+
+    // Contadores para Liquidador
+    val resumenLiquidador = remember(idUsuario, version, rol) {
+        if (rol != "LIQUIDADOR") null
+        else db.resumenLiquidador(idUsuario)
+    }
+    val countTodosLiq = remember(idUsuario, version, rol, badgeCasosLiquidador, resumenLiquidador) {
+        if (rol != "LIQUIDADOR") 0
+        else badgeCasosLiquidador ?: (resumenLiquidador?.asignados ?: 0)
+    }
+    val countActivosLiq = remember(idUsuario, version, rol, badgeActivosLiquidador) {
+        if (rol != "LIQUIDADOR") 0
+        else badgeActivosLiquidador ?: db.siniestrosDeLiquidador(idUsuario)
+            .count { !it.estado.equals("Cerrado", ignoreCase = true) }
+    }
+    val countPendientesLiq = remember(idUsuario, version, rol, badgePendientesLiquidador, resumenLiquidador) {
+        if (rol != "LIQUIDADOR") 0
+        else badgePendientesLiquidador ?: (resumenLiquidador?.pendientesDocs ?: 0)
+    }
+
     val opcionesNavegacion = when (rol) {
         "ASEGURADO" -> listOf(
-            OpcionMenuLateral("inicio", "Historial de siniestros", Icons.Default.History, onIrInicioAsegurado),
-            OpcionMenuLateral("consulta", "Consultar siniestro", Icons.Default.Search, onConsultarSiniestro),
-            OpcionMenuLateral("editar_perfil", "Editar perfil", Icons.Default.Edit, onEditarPerfil)
+            OpcionMenuLateral("inicio", "Historial de siniestros", Icons.Default.History, onClick = onIrInicioAsegurado),
+            OpcionMenuLateral("consulta", "Consultar siniestro", Icons.Default.Search, onClick = onConsultarSiniestro),
+            OpcionMenuLateral("editar_perfil", "Editar perfil", Icons.Default.Edit, onClick = onEditarPerfil)
         )
         "LIQUIDADOR" -> listOf(
-            OpcionMenuLateral("panel", "Siniestros asignados", Icons.AutoMirrored.Filled.Assignment, onIrPanelPrincipal),
-            OpcionMenuLateral("editar_perfil_staff", "Editar perfil", Icons.Default.Edit, onEditarPerfil)
+            OpcionMenuLateral(
+                ruta = "liquidador_inicio",
+                etiqueta = "Inicio",
+                icono = Icons.Default.Home,
+                onClick = onIrPanelPrincipal
+            ),
+            OpcionMenuLateral(
+                ruta = "liquidador_todos",
+                etiqueta = "Todos mis casos",
+                icono = Icons.AutoMirrored.Filled.Assignment,
+                badge = countTodosLiq,
+                colorBadge = Primario,
+                onClick = onIrTodosCasosLiquidador ?: onIrPanelPrincipal
+            ),
+            OpcionMenuLateral(
+                ruta = "liquidador_activos",
+                etiqueta = "En evaluación y activos",
+                icono = Icons.Default.Schedule,
+                badge = countActivosLiq,
+                colorBadge = Color(0xFFD97706),
+                onClick = onIrActivosLiquidador ?: onIrPanelPrincipal
+            ),
+            OpcionMenuLateral(
+                ruta = "liquidador_pendientes",
+                etiqueta = "Pendientes de docs.",
+                icono = Icons.Default.Warning,
+                badge = countPendientesLiq,
+                colorBadge = Color(0xFFDC2626),
+                onClick = onIrPendientesLiquidador ?: onIrPanelPrincipal
+            ),
+            OpcionMenuLateral(
+                ruta = "liquidador_cerrados",
+                etiqueta = "Casos cerrados",
+                icono = Icons.Default.CheckCircle,
+                onClick = onIrCerradosLiquidador ?: onIrPanelPrincipal
+            ),
+            OpcionMenuLateral(
+                ruta = "editar_perfil_staff",
+                etiqueta = "Editar perfil",
+                icono = Icons.Default.Edit,
+                onClick = onEditarPerfil
+            )
         )
         "ANALISTA" -> listOf(
-            OpcionMenuLateral("analista", "Solicitudes de registro", Icons.Default.HowToReg, onIrPanelPrincipal),
-            OpcionMenuLateral("editar_perfil_staff", "Editar perfil", Icons.Default.Edit, onEditarPerfil)
-        )
-        "ADMIN" -> listOf(
-            OpcionMenuLateral("admin", "Asignar siniestros", Icons.Default.AssignmentInd, onIrPanelPrincipal),
-            OpcionMenuLateral("editar_perfil_staff", "Editar perfil", Icons.Default.Edit, onEditarPerfil)
+            OpcionMenuLateral(
+                ruta = "analista_inicio",
+                etiqueta = "Inicio",
+                icono = Icons.Default.Home,
+                onClick = onIrPanelPrincipal
+            ),
+            OpcionMenuLateral(
+                ruta = "analista_siniestros",
+                etiqueta = "Gestión de siniestros",
+                icono = Icons.AutoMirrored.Filled.Assignment,
+                badge = countSinAsignar,
+                colorBadge = Color(0xFFD97706),
+                onClick = onIrSiniestrosAnalista
+            ),
+            OpcionMenuLateral(
+                ruta = "analista_estados",
+                etiqueta = "Cambios de estado",
+                icono = Icons.Default.SwapHoriz,
+                badge = countEstados,
+                colorBadge = Primario,
+                onClick = onIrCambiosEstadoAnalista
+            ),
+            OpcionMenuLateral(
+                ruta = "analista_cuentas",
+                etiqueta = "Solicitudes de cuenta",
+                icono = Icons.Default.HowToReg,
+                badge = countCuentas,
+                colorBadge = Color(0xFF15803D),
+                onClick = onIrSolicitudesCuentaAnalista
+            ),
+            OpcionMenuLateral(
+                ruta = "editar_perfil_staff",
+                etiqueta = "Editar perfil",
+                icono = Icons.Default.Edit,
+                onClick = onEditarPerfil
+            )
         )
         else -> emptyList()
     }
@@ -226,6 +348,20 @@ fun ContenedorConMenuLateral(
                             )
                         },
                         icon = { Icon(opcion.icono, contentDescription = null) },
+                        badge = if (opcion.badge > 0) {
+                            {
+                                Badge(
+                                    containerColor = opcion.colorBadge,
+                                    contentColor = Color.White
+                                ) {
+                                    Text(
+                                        text = opcion.badge.toString(),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        } else null,
                         selected = seleccionada,
                         colors = coloresItemMenu,
                         onClick = {

@@ -1,6 +1,7 @@
 package cl.duocuc.miregistro.ui.screens
 
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -57,11 +59,13 @@ import androidx.compose.ui.unit.sp
 import cl.duocuc.miregistro.data.AjustesTema
 import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.model.DetalleSiniestro
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleSiniestroPanel(
     d: DetalleSiniestro,
+    estadoSolicitado: String? = null,
     mensaje: String?,
     onGuardarEstado: (String) -> Unit,
     onEnviarComentario: (String) -> Unit,
@@ -77,6 +81,8 @@ fun DetalleSiniestroPanel(
         UsuarioDbHelper.estadosPermitidosDesde(d.estado)
     }
     val estaCerrado = d.estado.equals("Cerrado", ignoreCase = true)
+    val tieneSolicitudPendiente = !estadoSolicitado.isNullOrBlank()
+    val bloqueoEstado = estaCerrado || tieneSolicitudPendiente
 
     val colorPrincipal = MaterialTheme.colorScheme.primary
     val colorVerde = if (AjustesTema.oscuro) Color(0xFF4ADE80) else Color(0xFF15803D)
@@ -105,6 +111,25 @@ fun DetalleSiniestroPanel(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
+            if (tieneSolicitudPendiente) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = if (AjustesTema.oscuro) Color(0xFF78350F) else Color(0xFFFEF3C7),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = "Cambio a \"$estadoSolicitado\" pendiente de aprobación por un analista.",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (AjustesTema.oscuro) Color(0xFFFDE68A) else Color(0xFF92400E)
+                    )
+                }
+            }
+
             Text(
                 text = "Estado actual",
                 fontWeight = FontWeight.Bold,
@@ -112,16 +137,16 @@ fun DetalleSiniestroPanel(
                 color = MaterialTheme.colorScheme.onSurface
             )
             ExposedDropdownMenuBox(
-                expanded = expandido && !estaCerrado,
-                onExpandedChange = { if (!estaCerrado) expandido = it }
+                expanded = expandido && !bloqueoEstado,
+                onExpandedChange = { if (!bloqueoEstado) expandido = it }
             ) {
                 OutlinedTextField(
                     value = estado,
                     onValueChange = {},
                     readOnly = true,
-                    enabled = !estaCerrado,
+                    enabled = !bloqueoEstado,
                     trailingIcon = {
-                        if (estaCerrado) {
+                        if (bloqueoEstado) {
                             Icon(
                                 Icons.Default.Lock,
                                 contentDescription = null,
@@ -138,7 +163,7 @@ fun DetalleSiniestroPanel(
                     modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
                 ExposedDropdownMenu(
-                    expanded = expandido && !estaCerrado,
+                    expanded = expandido && !bloqueoEstado,
                     onDismissRequest = { expandido = false },
                     containerColor = MaterialTheme.colorScheme.surface
                 ) {
@@ -155,10 +180,10 @@ fun DetalleSiniestroPanel(
             }
 
             Text(
-                text = if (estaCerrado) {
-                    "Este siniestro está cerrado y no admite cambios de estado."
-                } else {
-                    "Solo puedes mantener o avanzar a etapas posteriores."
+                text = when {
+                    estaCerrado -> "Este siniestro está cerrado y no admite cambios de estado."
+                    tieneSolicitudPendiente -> "Debes esperar la respuesta del analista antes de solicitar otro cambio."
+                    else -> "Todo cambio de estado requiere aprobación previa de un analista."
                 },
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -166,11 +191,11 @@ fun DetalleSiniestroPanel(
 
             Button(
                 onClick = { onGuardarEstado(estado) },
-                enabled = !estaCerrado && estado != d.estado,
+                enabled = !bloqueoEstado && estado != d.estado,
                 modifier = Modifier.fillMaxWidth().height(44.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
             ) {
-                Text("Guardar cambios de estado", fontWeight = FontWeight.Bold)
+                Text("Solicitar cambio de estado", fontWeight = FontWeight.Bold)
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -215,16 +240,49 @@ fun DetalleSiniestroPanel(
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     items(d.evidencias) { ev ->
                         if (ev.esImagen) {
-                            val bitmap = remember(ev.bytes) {
-                                BitmapFactory.decodeByteArray(ev.bytes, 0, ev.bytes.size)?.asImageBitmap()
+                            val bitmap = remember(ev.urlArchivo) {
+                                val ruta = Uri.parse(ev.urlArchivo).path
+                                if (!ruta.isNullOrBlank() && File(ruta).exists()) {
+                                    BitmapFactory.decodeFile(ruta)?.asImageBitmap()
+                                } else {
+                                    null
+                                }
                             }
                             if (bitmap != null) {
                                 Image(
                                     bitmap = bitmap,
-                                    contentDescription = "Foto Evidencia",
+                                    contentDescription = ev.nombre,
                                     modifier = Modifier.size(90.dp).clip(RoundedCornerShape(8.dp)),
                                     contentScale = ContentScale.Crop
                                 )
+                            } else {
+                                Card(
+                                    modifier = Modifier.size(90.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Image,
+                                            contentDescription = "Imagen",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = ev.nombre,
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
                             }
                         } else {
                             Card(

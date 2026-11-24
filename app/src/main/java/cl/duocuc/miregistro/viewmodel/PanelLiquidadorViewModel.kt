@@ -12,12 +12,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private typealias MapaPendientes = Map<String, String>
+
 class PanelLiquidadorViewModel(app: Application) : AndroidViewModel(app) {
 
     private val dbHelper = UsuarioDbHelper(app)
     private var idLiquidador = 0L
     private val _ui = MutableStateFlow(PanelUiState())
     val ui: StateFlow<PanelUiState> = _ui.asStateFlow()
+
+    private val _solicitudesPendientes = MutableStateFlow<MapaPendientes>(emptyMap())
+    val solicitudesPendientes: StateFlow<MapaPendientes> = _solicitudesPendientes.asStateFlow()
 
     fun cargar(id: Long) {
         idLiquidador = id
@@ -26,15 +31,16 @@ class PanelLiquidadorViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun refrescar(numeroSel: String?, mensaje: String?) {
         viewModelScope.launch {
-            val estado = withContext(Dispatchers.IO) {
+            val (estado, pendientes) = withContext(Dispatchers.IO) {
                 PanelUiState(
                     cargando = false,
                     resumen = dbHelper.resumenLiquidador(idLiquidador),
                     siniestros = dbHelper.siniestrosDeLiquidador(idLiquidador),
                     seleccionado = numeroSel?.let { dbHelper.detalleSiniestro(it) },
                     mensaje = mensaje
-                )
+                ) to dbHelper.mapaEstadosSolicitadosLiquidador(idLiquidador)
             }
+            _solicitudesPendientes.value = pendientes
             _ui.value = estado
         }
     }
@@ -47,12 +53,12 @@ class PanelLiquidadorViewModel(app: Application) : AndroidViewModel(app) {
         val numero = _ui.value.seleccionado?.numero ?: return
         viewModelScope.launch {
             val ok = withContext(Dispatchers.IO) {
-                dbHelper.actualizarEstadoSiniestro(numero, estado)
+                dbHelper.solicitarCambioEstadoSiniestro(numero, estado)
             }
             val msg = if (ok) {
-                "Estado actualizado correctamente"
+                "Solicitud de cambio a '$estado' enviada al analista para aprobación"
             } else {
-                "No se permite retroceder a un estado anterior"
+                "Selecciona una etapa posterior al estado actual"
             }
             refrescar(numero, msg)
         }
