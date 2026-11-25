@@ -43,6 +43,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -55,11 +56,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,88 +72,70 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.data.SiniestroAdmin
 import cl.duocuc.miregistro.data.SolicitudCambioEstado
 import cl.duocuc.miregistro.data.SolicitudRegistro
-import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.model.Usuario
 import cl.duocuc.miregistro.ui.components.ContenedorConMenuLateral
 import cl.duocuc.miregistro.ui.theme.Exito
 import cl.duocuc.miregistro.ui.theme.Primario
-
-private enum class SeccionAnalista(val ruta: String, val titulo: String) {
-    INICIO("analista_inicio", "Panel Analista"),
-    SINIESTROS("analista_siniestros", "Gestión de siniestros"),
-    ESTADOS("analista_estados", "Cambios de estado"),
-    CUENTAS("analista_cuentas", "Solicitudes de cuenta")
-}
-
-private enum class FiltroSiniestroAnalista(val etiqueta: String) {
-    TODOS("Todos"),
-    SIN_ASIGNAR("Sin asignar"),
-    ASIGNADOS("Asignados")
-}
+import cl.duocuc.miregistro.viewmodel.FiltroSiniestroAnalista
+import cl.duocuc.miregistro.viewmodel.PanelAnalistaViewModel
+import cl.duocuc.miregistro.viewmodel.SeccionAnalista
 
 @Composable
 fun PanelAnalistaScreen(
     idAnalista: Long,
     onEditarPerfil: (Long) -> Unit,
-    onCerrarSesion: () -> Unit
+    onCerrarSesion: () -> Unit,
+    viewModel: PanelAnalistaViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val db = remember { UsuarioDbHelper(context) }
+    val ui by viewModel.ui.collectAsState()
 
-    var recargar by remember { mutableIntStateOf(0) }
-    var seccion by rememberSaveable { mutableStateOf(SeccionAnalista.INICIO) }
-    var filtroSiniestro by remember { mutableStateOf(FiltroSiniestroAnalista.TODOS) }
     var siniestroAAsignar by remember { mutableStateOf<SiniestroAdmin?>(null) }
     var mostrarAvisos by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = seccion != SeccionAnalista.INICIO) {
-        seccion = SeccionAnalista.INICIO
+    LaunchedEffect(idAnalista) {
+        viewModel.cargar(idAnalista)
     }
 
-    val todosSiniestros = remember(recargar) { db.todosLosSiniestrosAdmin() }
-    val liquidadores = remember(recargar) { db.listarLiquidadores() }
-    val solicitudesPendientes = remember(recargar) { db.listarSolicitudesPendientes() }
-    val solicitudesEstado = remember(recargar) { db.listarSolicitudesCambioEstado() }
-
-    val sinAsignarCount = todosSiniestros.count { it.liquidadorId == null }
-    val activosCount = todosSiniestros.count { it.liquidadorId != null && it.estado != "Cerrado" }
-    val totalAvisos = solicitudesPendientes.size + solicitudesEstado.size
-
-    val listaFiltrada = remember(todosSiniestros, filtroSiniestro) {
-        when (filtroSiniestro) {
-            FiltroSiniestroAnalista.TODOS -> todosSiniestros
-            FiltroSiniestroAnalista.SIN_ASIGNAR -> todosSiniestros.filter { it.liquidadorId == null }
-            FiltroSiniestroAnalista.ASIGNADOS -> todosSiniestros.filter { it.liquidadorId != null }
+    LaunchedEffect(ui.eventoToast) {
+        ui.eventoToast?.let { mensaje ->
+            Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
+            viewModel.toastConsumido()
         }
+    }
+
+    BackHandler(enabled = ui.seccion != SeccionAnalista.INICIO) {
+        viewModel.cambiarSeccion(SeccionAnalista.INICIO)
     }
 
     ContenedorConMenuLateral(
         idUsuario = idAnalista,
-        titulo = seccion.titulo,
-        rutaActual = seccion.ruta,
-        onIrPanelPrincipal = { seccion = SeccionAnalista.INICIO },
-        onIrSiniestrosAnalista = { seccion = SeccionAnalista.SINIESTROS },
-        onIrCambiosEstadoAnalista = { seccion = SeccionAnalista.ESTADOS },
-        onIrSolicitudesCuentaAnalista = { seccion = SeccionAnalista.CUENTAS },
-        badgeSinAsignar = sinAsignarCount,
-        badgeCambiosEstado = solicitudesEstado.size,
-        badgeSolicitudesCuenta = solicitudesPendientes.size,
+        titulo = ui.seccion.titulo,
+        rutaActual = ui.seccion.ruta,
+        onIrPanelPrincipal = { viewModel.cambiarSeccion(SeccionAnalista.INICIO) },
+        onIrSiniestrosAnalista = { viewModel.cambiarSeccion(SeccionAnalista.SINIESTROS) },
+        onIrCambiosEstadoAnalista = { viewModel.cambiarSeccion(SeccionAnalista.ESTADOS) },
+        onIrSolicitudesCuentaAnalista = { viewModel.cambiarSeccion(SeccionAnalista.CUENTAS) },
+        badgeSinAsignar = ui.sinAsignarCount,
+        badgeCambiosEstado = ui.solicitudesEstado.size,
+        badgeSolicitudesCuenta = ui.solicitudesPendientes.size,
         onEditarPerfil = { onEditarPerfil(idAnalista) },
         onCerrarSesion = onCerrarSesion,
         accionesExtra = {
             IconButton(onClick = { mostrarAvisos = true }) {
                 BadgedBox(
                     badge = {
-                        if (totalAvisos > 0) {
+                        if (ui.totalAvisos > 0) {
                             Badge(
                                 containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = Color.White
                             ) {
                                 Text(
-                                    text = totalAvisos.toString(),
+                                    text = ui.totalAvisos.toString(),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -161,15 +144,28 @@ fun PanelAnalistaScreen(
                     }
                 ) {
                     Icon(
-                        imageVector = if (totalAvisos > 0) Icons.Default.Notifications else Icons.Default.NotificationsNone,
+                        imageVector = if (ui.totalAvisos > 0) Icons.Default.Notifications else Icons.Default.NotificationsNone,
                         contentDescription = "Notificaciones",
-                        tint = if (totalAvisos > 0) Primario else MaterialTheme.colorScheme.onSurface
+                        tint = if (ui.totalAvisos > 0) Primario else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
         }
     ) { innerPadding ->
-        when (seccion) {
+        if (ui.cargando) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+            return@ContenedorConMenuLateral
+        }
+
+        when (ui.seccion) {
             SeccionAnalista.INICIO -> {
                 LazyColumn(
                     modifier = Modifier
@@ -181,9 +177,9 @@ fun PanelAnalistaScreen(
                     item {
                         Spacer(modifier = Modifier.height(6.dp))
                         CabeceraResumenAnalista(
-                            totalSiniestros = todosSiniestros.size,
-                            sinAsignar = sinAsignarCount,
-                            pendientesRevision = totalAvisos
+                            totalSiniestros = ui.todosSiniestros.size,
+                            sinAsignar = ui.sinAsignarCount,
+                            pendientesRevision = ui.totalAvisos
                         )
                     }
 
@@ -204,10 +200,10 @@ fun PanelAnalistaScreen(
                             icono = Icons.AutoMirrored.Filled.Assignment,
                             colorAcento = Primario,
                             colorFondoSuave = Color(0xFFDBEAFE),
-                            etiquetaEstado = if (sinAsignarCount > 0) "$sinAsignarCount sin asignar" else "Todos asignados",
-                            colorEtiquetaTexto = if (sinAsignarCount > 0) Color(0xFFB45309) else Color(0xFF15803D),
-                            colorEtiquetaFondo = if (sinAsignarCount > 0) Color(0xFFFEF3C7) else Color(0xFFDCFCE7),
-                            onClick = { seccion = SeccionAnalista.SINIESTROS }
+                            etiquetaEstado = if (ui.sinAsignarCount > 0) "${ui.sinAsignarCount} sin asignar" else "Todos asignados",
+                            colorEtiquetaTexto = if (ui.sinAsignarCount > 0) Color(0xFFB45309) else Color(0xFF15803D),
+                            colorEtiquetaFondo = if (ui.sinAsignarCount > 0) Color(0xFFFEF3C7) else Color(0xFFDCFCE7),
+                            onClick = { viewModel.cambiarSeccion(SeccionAnalista.SINIESTROS) }
                         )
                     }
 
@@ -218,10 +214,10 @@ fun PanelAnalistaScreen(
                             icono = Icons.Default.SwapHoriz,
                             colorAcento = Color(0xFFD97706),
                             colorFondoSuave = Color(0xFFFEF3C7),
-                            etiquetaEstado = if (solicitudesEstado.isNotEmpty()) "${solicitudesEstado.size} pendiente(s)" else "Al día",
-                            colorEtiquetaTexto = if (solicitudesEstado.isNotEmpty()) Color(0xFFB45309) else Color(0xFF15803D),
-                            colorEtiquetaFondo = if (solicitudesEstado.isNotEmpty()) Color(0xFFFEF3C7) else Color(0xFFDCFCE7),
-                            onClick = { seccion = SeccionAnalista.ESTADOS }
+                            etiquetaEstado = if (ui.solicitudesEstado.isNotEmpty()) "${ui.solicitudesEstado.size} pendiente(s)" else "Al día",
+                            colorEtiquetaTexto = if (ui.solicitudesEstado.isNotEmpty()) Color(0xFFB45309) else Color(0xFF15803D),
+                            colorEtiquetaFondo = if (ui.solicitudesEstado.isNotEmpty()) Color(0xFFFEF3C7) else Color(0xFFDCFCE7),
+                            onClick = { viewModel.cambiarSeccion(SeccionAnalista.ESTADOS) }
                         )
                     }
 
@@ -232,10 +228,10 @@ fun PanelAnalistaScreen(
                             icono = Icons.Default.HowToReg,
                             colorAcento = Color(0xFF15803D),
                             colorFondoSuave = Color(0xFFDCFCE7),
-                            etiquetaEstado = if (solicitudesPendientes.isNotEmpty()) "${solicitudesPendientes.size} por revisar" else "Al día",
-                            colorEtiquetaTexto = if (solicitudesPendientes.isNotEmpty()) Color(0xFF1D4ED8) else Color(0xFF15803D),
-                            colorEtiquetaFondo = if (solicitudesPendientes.isNotEmpty()) Color(0xFFDBEAFE) else Color(0xFFDCFCE7),
-                            onClick = { seccion = SeccionAnalista.CUENTAS }
+                            etiquetaEstado = if (ui.solicitudesPendientes.isNotEmpty()) "${ui.solicitudesPendientes.size} por revisar" else "Al día",
+                            colorEtiquetaTexto = if (ui.solicitudesPendientes.isNotEmpty()) Color(0xFF1D4ED8) else Color(0xFF15803D),
+                            colorEtiquetaFondo = if (ui.solicitudesPendientes.isNotEmpty()) Color(0xFFDBEAFE) else Color(0xFFDCFCE7),
+                            onClick = { viewModel.cambiarSeccion(SeccionAnalista.CUENTAS) }
                         )
                     }
 
@@ -252,21 +248,21 @@ fun PanelAnalistaScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
-                        BarraVolverInicioAnalista(onVolver = { seccion = SeccionAnalista.INICIO })
+                        BarraVolverInicioAnalista(onVolver = { viewModel.cambiarSeccion(SeccionAnalista.INICIO) })
                     }
 
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             TarjetaResumenAnalista(
                                 titulo = "Sin asignar",
-                                valor = sinAsignarCount,
-                                color = if (sinAsignarCount > 0) Color(0xFFD97706) else Exito,
-                                colorFondo = if (sinAsignarCount > 0) Color(0xFFFEF3C7).copy(alpha = 0.45f) else Color(0xFFDCFCE7).copy(alpha = 0.45f),
+                                valor = ui.sinAsignarCount,
+                                color = if (ui.sinAsignarCount > 0) Color(0xFFD97706) else Exito,
+                                colorFondo = if (ui.sinAsignarCount > 0) Color(0xFFFEF3C7).copy(alpha = 0.45f) else Color(0xFFDCFCE7).copy(alpha = 0.45f),
                                 modifier = Modifier.weight(1f)
                             )
                             TarjetaResumenAnalista(
                                 titulo = "En gestión",
-                                valor = activosCount,
+                                valor = ui.activosCount,
                                 color = Primario,
                                 colorFondo = Color(0xFFDBEAFE).copy(alpha = 0.55f),
                                 modifier = Modifier.weight(1f)
@@ -281,8 +277,8 @@ fun PanelAnalistaScreen(
                         ) {
                             FiltroSiniestroAnalista.entries.forEach { opcion ->
                                 FilterChip(
-                                    selected = filtroSiniestro == opcion,
-                                    onClick = { filtroSiniestro = opcion },
+                                    selected = ui.filtroSiniestro == opcion,
+                                    onClick = { viewModel.cambiarFiltro(opcion) },
                                     label = { Text(opcion.etiqueta) },
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
@@ -293,7 +289,7 @@ fun PanelAnalistaScreen(
                         }
                     }
 
-                    if (listaFiltrada.isEmpty()) {
+                    if (ui.siniestrosFiltrados.isEmpty()) {
                         item {
                             TarjetaEstadoVacioAnalista(
                                 titulo = "Sin siniestros en este filtro",
@@ -301,7 +297,7 @@ fun PanelAnalistaScreen(
                             )
                         }
                     } else {
-                        items(listaFiltrada, key = { it.numero }) { siniestro ->
+                        items(ui.siniestrosFiltrados, key = { it.numero }) { siniestro ->
                             TarjetaSiniestroAnalista(
                                 siniestro = siniestro,
                                 onAsignarClick = { siniestroAAsignar = siniestro }
@@ -322,10 +318,10 @@ fun PanelAnalistaScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
-                        BarraVolverInicioAnalista(onVolver = { seccion = SeccionAnalista.INICIO })
+                        BarraVolverInicioAnalista(onVolver = { viewModel.cambiarSeccion(SeccionAnalista.INICIO) })
                     }
 
-                    if (solicitudesEstado.isEmpty()) {
+                    if (ui.solicitudesEstado.isEmpty()) {
                         item {
                             TarjetaEstadoVacioAnalista(
                                 titulo = "Sin cambios de estado pendientes",
@@ -333,35 +329,11 @@ fun PanelAnalistaScreen(
                             )
                         }
                     } else {
-                        items(solicitudesEstado, key = { "estado_${it.numeroSiniestro}" }) { sol ->
+                        items(ui.solicitudesEstado, key = { "estado_${it.numeroSiniestro}" }) { sol ->
                             TarjetaSolicitudCambioEstado(
                                 solicitud = sol,
-                                onAprobar = {
-                                    val error = db.aprobarCambioEstado(idAnalista, sol.numeroSiniestro)
-                                    if (error == null) {
-                                        recargar++
-                                        Toast.makeText(
-                                            context,
-                                            "Cambio aprobado: ${sol.numeroSiniestro} pasó a '${sol.estadoSolicitado}'",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    } else {
-                                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
-                                    }
-                                },
-                                onRechazar = {
-                                    val error = db.rechazarCambioEstado(idAnalista, sol.numeroSiniestro)
-                                    if (error == null) {
-                                        recargar++
-                                        Toast.makeText(
-                                            context,
-                                            "Solicitud rechazada para ${sol.numeroSiniestro}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    } else {
-                                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
-                                    }
-                                }
+                                onAprobar = { viewModel.aprobarCambioEstado(sol.numeroSiniestro, sol.estadoSolicitado) },
+                                onRechazar = { viewModel.rechazarCambioEstado(sol.numeroSiniestro) }
                             )
                         }
                     }
@@ -379,10 +351,10 @@ fun PanelAnalistaScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
-                        BarraVolverInicioAnalista(onVolver = { seccion = SeccionAnalista.INICIO })
+                        BarraVolverInicioAnalista(onVolver = { viewModel.cambiarSeccion(SeccionAnalista.INICIO) })
                     }
 
-                    if (solicitudesPendientes.isEmpty()) {
+                    if (ui.solicitudesPendientes.isEmpty()) {
                         item {
                             TarjetaEstadoVacioAnalista(
                                 titulo = "Sin solicitudes de cuenta",
@@ -390,35 +362,11 @@ fun PanelAnalistaScreen(
                             )
                         }
                     } else {
-                        items(solicitudesPendientes, key = { "usuario_${it.idUsuario}" }) { solicitud ->
+                        items(ui.solicitudesPendientes, key = { "usuario_${it.idUsuario}" }) { solicitud ->
                             TarjetaSolicitudCuenta(
                                 solicitud = solicitud,
-                                onAprobar = {
-                                    val error = db.aprobarSolicitudRegistro(idAnalista, solicitud.idUsuario)
-                                    if (error == null) {
-                                        recargar++
-                                        Toast.makeText(
-                                            context,
-                                            "Cuenta de ${solicitud.nombre} aprobada",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    } else {
-                                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
-                                    }
-                                },
-                                onDesaprobar = {
-                                    val error = db.desaprobarSolicitudRegistro(idAnalista, solicitud.idUsuario)
-                                    if (error == null) {
-                                        recargar++
-                                        Toast.makeText(
-                                            context,
-                                            "Solicitud de ${solicitud.nombre} desaprobada",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    } else {
-                                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
-                                    }
-                                }
+                                onAprobar = { viewModel.aprobarSolicitudCuenta(solicitud.idUsuario, solicitud.nombre) },
+                                onDesaprobar = { viewModel.desaprobarSolicitudCuenta(solicitud.idUsuario, solicitud.nombre) }
                             )
                         }
                     }
@@ -431,16 +379,16 @@ fun PanelAnalistaScreen(
 
     if (mostrarAvisos) {
         DialogoAvisosNotificacion(
-            cantidadCuentas = solicitudesPendientes.size,
-            cantidadEstados = solicitudesEstado.size,
+            cantidadCuentas = ui.solicitudesPendientes.size,
+            cantidadEstados = ui.solicitudesEstado.size,
             onDismiss = { mostrarAvisos = false },
             onIrCuentas = {
                 mostrarAvisos = false
-                seccion = SeccionAnalista.CUENTAS
+                viewModel.cambiarSeccion(SeccionAnalista.CUENTAS)
             },
             onIrEstados = {
                 mostrarAvisos = false
-                seccion = SeccionAnalista.ESTADOS
+                viewModel.cambiarSeccion(SeccionAnalista.ESTADOS)
             }
         )
     }
@@ -448,14 +396,10 @@ fun PanelAnalistaScreen(
     siniestroAAsignar?.let { target ->
         DialogoAsignarLiquidadorAnalista(
             siniestro = target,
-            liquidadores = liquidadores,
+            liquidadores = ui.liquidadores,
             onDismiss = { siniestroAAsignar = null },
             onConfirmar = { idLiquidadorSeleccionado ->
-                val ok = db.asignarLiquidador(target.numero, idLiquidadorSeleccionado)
-                if (ok) {
-                    recargar++
-                    Toast.makeText(context, "Siniestro ${target.numero} asignado", Toast.LENGTH_SHORT).show()
-                }
+                viewModel.asignarLiquidador(target.numero, idLiquidadorSeleccionado)
                 siniestroAAsignar = null
             }
         )

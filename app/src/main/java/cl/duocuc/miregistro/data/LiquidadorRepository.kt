@@ -1,9 +1,15 @@
-package cl.duocuc.miregistro.data
+package cl.duocuc.miregistro.data.repository
 
-import cl.duocuc.miregistro.data.remote.*
+import cl.duocuc.miregistro.data.remote.CambiarEstadoRequest
+import cl.duocuc.miregistro.data.remote.CrearSiniestroRequest
+import cl.duocuc.miregistro.data.remote.LiquidadorApi
+import cl.duocuc.miregistro.data.remote.RetrofitClient
+import cl.duocuc.miregistro.data.remote.SolicitarDocumentoRequest
+import cl.duocuc.miregistro.data.remote.aDetalleSiniestro
+import cl.duocuc.miregistro.data.remote.aSiniestroResumen
 import cl.duocuc.miregistro.model.DetalleSiniestro
 import cl.duocuc.miregistro.model.SiniestroResumen
-
+import cl.duocuc.miregistro.data.llamarApi
 class LiquidadorRepository(
     private val api: LiquidadorApi = RetrofitClient.liquidadorApi
 ) {

@@ -41,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,6 +63,12 @@ import cl.duocuc.miregistro.data.UsuarioDbHelper
 import cl.duocuc.miregistro.model.FiltroSiniestro
 import cl.duocuc.miregistro.ui.components.ContenedorConMenuLateral
 import cl.duocuc.miregistro.viewmodel.ConsultaSiniestroViewModel
+
+private val ColorEnProceso = Color(0xFFFFB74D)
+private val ColorEnProcesoTexto = Color(0xFFE65100)
+private val ColorCerrado = Color(0xFF81C784)
+private val ColorCerradoTexto = Color(0xFF1B5E20)
+private val ColorIndigoSuave = Color(0xFF3949AB)
 
 @Composable
 fun ConsultaSiniestroScreen(
@@ -91,13 +98,28 @@ fun ConsultaSiniestroScreen(
         }
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            if (mostrarBienvenida) {
+                onBienvenidaMostrada()
+            }
+        }
+    }
+
+    val cerrarSesionLimpio = {
+        if (mostrarBienvenida) {
+            onBienvenidaMostrada()
+        }
+        onCerrarSesion()
+    }
+
     ContenedorConMenuLateral(
         idUsuario = idUsuario,
         titulo = "Consultar siniestro",
         rutaActual = "consulta",
         onIrInicioAsegurado = onVerMisSiniestros,
         onEditarPerfil = onEditarPerfil,
-        onCerrarSesion = onCerrarSesion
+        onCerrarSesion = cerrarSesionLimpio
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -143,7 +165,7 @@ fun ConsultaSiniestroScreen(
                             Text(
                                 text = "Ingresa tu código de seguimiento para revisar el estado en tiempo real.",
                                 fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.88f),
+                                color = Color.White.copy(alpha = 0.9f),
                                 lineHeight = 16.sp
                             )
                         }
@@ -153,9 +175,24 @@ fun ConsultaSiniestroScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        PildoraResumenConsulta("Total", resumen.total, Modifier.weight(1f))
-                        PildoraResumenConsulta("En proceso", resumen.enProceso, Modifier.weight(1f))
-                        PildoraResumenConsulta("Cerrados", resumen.completados, Modifier.weight(1f))
+                        PildoraResumenConsulta(
+                            etiqueta = "Total",
+                            valor = resumen.total,
+                            colorAcento = Color.White.copy(alpha = 0.22f),
+                            modifier = Modifier.weight(1f)
+                        )
+                        PildoraResumenConsulta(
+                            etiqueta = "En proceso",
+                            valor = resumen.enProceso,
+                            colorAcento = ColorEnProceso.copy(alpha = 0.30f),
+                            modifier = Modifier.weight(1f)
+                        )
+                        PildoraResumenConsulta(
+                            etiqueta = "Cerrados",
+                            valor = resumen.completados,
+                            colorAcento = ColorCerrado.copy(alpha = 0.30f),
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -170,7 +207,7 @@ fun ConsultaSiniestroScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Column(
@@ -183,7 +220,7 @@ fun ConsultaSiniestroScreen(
                             text = "Código de seguimiento",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp)
@@ -259,7 +296,7 @@ fun ConsultaSiniestroScreen(
                             Icon(
                                 imageVector = Icons.Default.Info,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = ColorIndigoSuave,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -282,12 +319,16 @@ fun ConsultaSiniestroScreen(
                                 if (index > 0) {
                                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                 }
+                                val esCerrado = item.estado.equals("Cerrado", ignoreCase = true)
+                                val fondoEstado = if (esCerrado) ColorCerrado.copy(alpha = 0.22f) else ColorEnProceso.copy(alpha = 0.22f)
+                                val textoEstado = if (esCerrado) ColorCerradoTexto else ColorEnProcesoTexto
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(10.dp))
                                         .clickable { onSiniestroEncontrado(item.numero) }
-                                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                                        .padding(vertical = 8.dp, horizontal = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -296,18 +337,36 @@ fun ConsultaSiniestroScreen(
                                             text = item.numero,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
-                                        Text(
-                                            text = "${item.tipo} · ${item.estado}",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = item.tipo,
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Surface(
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = fondoEstado
+                                            ) {
+                                                Text(
+                                                    text = item.estado,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = textoEstado,
+                                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                         contentDescription = "Ver detalle",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -316,11 +375,11 @@ fun ConsultaSiniestroScreen(
                         OutlinedButton(
                             onClick = onVerMisSiniestros,
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.List, contentDescription = null)
+                            Icon(Icons.Default.List, contentDescription = null, tint = ColorIndigoSuave)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Ver todos mis siniestros", fontWeight = FontWeight.SemiBold)
                         }
@@ -355,12 +414,14 @@ fun ConsultaSiniestroScreen(
 private fun PildoraResumenConsulta(
     etiqueta: String,
     valor: Int,
+    colorAcento: Color,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = Color.White.copy(alpha = 0.16f)
+        color = colorAcento,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
     ) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
@@ -375,7 +436,7 @@ private fun PildoraResumenConsulta(
             Text(
                 text = etiqueta,
                 fontSize = 11.sp,
-                color = Color.White.copy(alpha = 0.88f)
+                color = Color.White.copy(alpha = 0.92f)
             )
         }
     }

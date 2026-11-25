@@ -78,13 +78,18 @@ fun InicioAseguradoScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val usuario = remember(version) { db.buscarPorId(idUsuario) }
-    val resumen = remember(version) { db.resumenAsegurado(idUsuario) }
-    val lista = remember(version, filtro) { db.siniestrosDeAsegurado(idUsuario, filtro) }
-    val alertas = remember(version) { db.alertasDocumentos(idUsuario) }
+    val usuario = remember(version, idUsuario) { db.buscarPorId(idUsuario) }
+    val resumen = remember(version, idUsuario) { db.resumenAsegurado(idUsuario) }
+    val lista = remember(version, idUsuario, filtro) { db.siniestrosDeAsegurado(idUsuario, filtro) }
+    val alertas = remember(version, idUsuario) { db.alertasDocumentos(idUsuario) }
 
     val nombre = usuario?.nombre ?: "Usuario"
     val primerNombre = nombre.trim().split(" ").firstOrNull() ?: nombre
+
+    val cerrarSesionLimpio = {
+        mostrarAlertas = false
+        onCerrarSesion()
+    }
 
     ContenedorConMenuLateral(
         idUsuario = idUsuario,
@@ -92,7 +97,7 @@ fun InicioAseguradoScreen(
         rutaActual = "inicio",
         onConsultarSiniestro = onConsultarSiniestro,
         onEditarPerfil = onEditarPerfil,
-        onCerrarSesion = onCerrarSesion,
+        onCerrarSesion = cerrarSesionLimpio,
         modifier = modifier,
         accionesExtra = {
             IconButton(onClick = { mostrarAlertas = true }) {
