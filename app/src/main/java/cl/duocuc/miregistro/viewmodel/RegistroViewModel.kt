@@ -3,17 +3,15 @@ package cl.duocuc.miregistro.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.miregistro.data.UsuarioDbHelper
-import kotlinx.coroutines.Dispatchers
+import cl.duocuc.miregistro.data.remote.RegistroRequest
+import cl.duocuc.miregistro.data.remote.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 class RegistroViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = UsuarioDbHelper(application)
 
     private val _registroExitoso = MutableStateFlow(false)
     val registroExitoso: StateFlow<Boolean> = _registroExitoso.asStateFlow()
@@ -62,26 +60,30 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
         }
 
         viewModelScope.launch {
-            val exito = withContext(Dispatchers.IO) {
-                db.registrarUsuario(
-                    nombre = nombre,
-                    rut = rut,
-                    correo = correo,
-                    claveTextoPlano = contrasena,
-                    preg1 = preg1,
-                    resp1 = resp1,
-                    preg2 = preg2,
-                    resp2 = resp2,
-                    preg3 = preg3,
-                    resp3 = resp3
+            try {
+                val request = RegistroRequest(
+                    nombre = nombre.trim(),
+                    rut = rut.trim(),
+                    correo = correo.trim(),
+                    contrasena = contrasena,
+                    respuesta1 = resp1.trim(),
+                    respuesta2 = resp2.trim(),
+                    respuesta3 = resp3.trim()
                 )
-            }
 
-            if (exito) {
+                RetrofitClient.authApi.registrar(request)
+
                 _registroExitoso.value = true
                 _mensajeError.value = null
-            } else {
-                _mensajeError.value = "El correo o RUT ingresado ya está registrado"
+            } catch (e: HttpException) {
+                val detalleError = e.response()?.errorBody()?.string()
+                _mensajeError.value = if (!detalleError.isNullOrBlank()) {
+                    detalleError
+                } else {
+                    "Error al registrar (código ${e.code()})"
+                }
+            } catch (e: Exception) {
+                _mensajeError.value = "No se pudo conectar con el servidor: ${e.localizedMessage}"
             }
         }
     }

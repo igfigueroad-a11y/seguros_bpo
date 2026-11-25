@@ -11,7 +11,7 @@ object RetrofitClient {
     // - /auth/**       -> redirige a auth-service (8081)
     // - /liquidador/** -> redirige a liquidador-service (8084)
     // - /analista/**   -> redirige a analista-service (8085)
-    private const val URL_GATEWAY = "http://10.0.2.2:8090/"
+    private const val URL_GATEWAY = "http://localhost:8090/"
 
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
