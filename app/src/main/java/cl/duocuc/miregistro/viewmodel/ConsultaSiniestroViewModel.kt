@@ -1,24 +1,19 @@
 package cl.duocuc.miregistro.viewmodel
 
-
-
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.miregistro.data.UsuarioDbHelper
+import cl.duocuc.miregistro.data.LiquidadorRepository
 import cl.duocuc.miregistro.model.ConsultaUiState
 import cl.duocuc.miregistro.utils.Validaciones
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-class ConsultaSiniestroViewModel(app: Application) : AndroidViewModel(app) {
-
-    private val dbHelper = UsuarioDbHelper(app)
+class ConsultaSiniestroViewModel(
+    private val repository: LiquidadorRepository = LiquidadorRepository()
+) : ViewModel() {
 
     private val _ui = MutableStateFlow(ConsultaUiState())
     val ui: StateFlow<ConsultaUiState> = _ui.asStateFlow()
@@ -27,19 +22,20 @@ class ConsultaSiniestroViewModel(app: Application) : AndroidViewModel(app) {
         _ui.update { it.copy(numero = texto, error = null) }
     }
 
-    fun buscar() {
+    fun buscar(token: String = "") {
         val numero = _ui.value.numero.trim().uppercase()
-        // La regla ahora vive en Validaciones (así se puede probar sola)
         val error = Validaciones.validarNumeroSiniestro(numero)
         if (error != null) {
             _ui.update { it.copy(error = error) }
             return
         }
         viewModelScope.launch {
-            val existe = withContext(Dispatchers.IO) { dbHelper.existeSiniestro(numero) }
-            _ui.update {
-                if (existe) it.copy(siniestroEncontrado = numero)
-                else it.copy(error = "No se encontró el siniestro $numero")
+            runCatching {
+                repository.detalleSiniestro(token, numero)
+            }.onSuccess {
+                _ui.update { it.copy(siniestroEncontrado = numero) }
+            }.onFailure {
+                _ui.update { it.copy(error = "No se encontró el siniestro $numero") }
             }
         }
     }

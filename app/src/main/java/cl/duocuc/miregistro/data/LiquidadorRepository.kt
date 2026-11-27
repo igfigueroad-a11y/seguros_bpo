@@ -11,6 +11,8 @@ class LiquidadorRepository(
         llamarApi { api.listar(RetrofitClient.bearer(token), estado) }
             .map { it.aSiniestroResumen() }
 
+
+
     suspend fun detalleSiniestro(token: String, numero: String): DetalleSiniestro =
         llamarApi { api.detalle(RetrofitClient.bearer(token), numero) }
             .aDetalleSiniestro()

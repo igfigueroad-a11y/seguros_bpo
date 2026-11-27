@@ -1,28 +1,25 @@
 package cl.duocuc.miregistro.viewmodel
 
-import android.app.Application
-import android.util.Patterns
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duocuc.miregistro.R
-import cl.duocuc.miregistro.data.SesionPreferencias
-import cl.duocuc.miregistro.data.UsuarioDbHelper
+import cl.duocuc.miregistro.data.AuthRepository
 import cl.duocuc.miregistro.model.LoginUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-class LoginViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = UsuarioDbHelper(application)
-    private val sesion = SesionPreferencias(application)
+class LoginViewModel(
+    private val repository: AuthRepository = AuthRepository(),
+    private val onGuardarSesion: (id: Long, rolId: Long, token: String) -> Unit = { _, _, _ -> }
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    private val regexCorreo = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
 
     fun onCorreoCambia(valor: String) {
         _uiState.update {
@@ -45,8 +42,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
         val errorCorreo = when {
             estado.correo.isBlank() -> R.string.login_error_correo_vacio
-            !Patterns.EMAIL_ADDRESS.matcher(estado.correo.trim()).matches() ->
-                R.string.login_error_correo_invalido
+            !regexCorreo.matches(estado.correo.trim()) -> R.string.login_error_correo_invalido
             else -> null
         }
         val errorContrasena =
@@ -62,36 +58,19 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(cargando = true, errorGeneral = null, mensajeBloqueo = null) }
 
         viewModelScope.launch {
-            val resultado = runCatching {
-                withContext(Dispatchers.IO) {
-                    val bloqueo = db.verificarEstadoRegistro(estado.correo)
-                    if (bloqueo != null) {
-                        Pair(null, bloqueo)
-                    } else {
-                        Pair(db.validarLogin(estado.correo, estado.contrasena), null)
-                    }
+            runCatching {
+                repository.login(estado.correo, estado.contrasena)
+            }.onSuccess { (token, usuario) ->
+                onGuardarSesion(usuario.id, usuario.rolId, token)
+                _uiState.update { it.copy(cargando = false, usuario = usuario) }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        cargando = false,
+                        mensajeBloqueo = error.message ?: "Error al iniciar sesión"
+                    )
                 }
             }
-            resultado
-                .onSuccess { (usuario, bloqueo) ->
-                    if (bloqueo != null) {
-                        _uiState.update {
-                            it.copy(cargando = false, mensajeBloqueo = bloqueo)
-                        }
-                    } else if (usuario != null) {
-                        sesion.guardar(usuario.id, usuario.rolId)
-                        _uiState.update { it.copy(cargando = false, usuario = usuario) }
-                    } else {
-                        _uiState.update {
-                            it.copy(cargando = false, errorGeneral = R.string.login_error_credenciales)
-                        }
-                    }
-                }
-                .onFailure {
-                    _uiState.update {
-                        it.copy(cargando = false, errorGeneral = R.string.login_error_generico)
-                    }
-                }
         }
     }
 

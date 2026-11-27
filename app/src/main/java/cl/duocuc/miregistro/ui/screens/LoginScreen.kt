@@ -19,14 +19,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.miregistro.R
+import cl.duocuc.miregistro.data.SesionPreferencias
 import cl.duocuc.miregistro.model.LoginUiState
 import cl.duocuc.miregistro.model.Usuario
 import cl.duocuc.miregistro.ui.components.BotonPrincipal
@@ -42,23 +45,33 @@ fun LoginScreen(
     onNavegarRecuperar: () -> Unit,
     onNavegarRegistro: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel? = null
 ) {
-    val estado by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val sesion = remember { SesionPreferencias(context) }
+    val vm = viewModel ?: viewModel {
+        LoginViewModel(
+            onGuardarSesion = { id, rolId, token ->
+                sesion.guardar(id, rolId, token)
+            }
+        )
+    }
+
+    val estado by vm.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(estado.usuario) {
         estado.usuario?.let { usuario ->
             onLoginExitoso(usuario)
-            viewModel.onLoginConsumido()
+            vm.onLoginConsumido()
         }
     }
 
     LoginContenido(
         estado = estado,
-        onCorreoCambia = viewModel::onCorreoCambia,
-        onContrasenaCambia = viewModel::onContrasenaCambia,
-        onAlternarVisibilidad = viewModel::onAlternarVisibilidad,
-        onIngresar = viewModel::onIngresar,
+        onCorreoCambia = vm::onCorreoCambia,
+        onContrasenaCambia = vm::onContrasenaCambia,
+        onAlternarVisibilidad = vm::onAlternarVisibilidad,
+        onIngresar = vm::onIngresar,
         onNavegarRecuperar = onNavegarRecuperar,
         onNavegarRegistro = onNavegarRegistro,
         modifier = modifier
