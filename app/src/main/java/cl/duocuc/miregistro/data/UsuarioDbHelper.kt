@@ -14,6 +14,7 @@ import cl.duocuc.miregistro.model.EvidenciaArchivo
 import cl.duocuc.miregistro.model.FiltroSiniestro
 import cl.duocuc.miregistro.model.ResumenAsegurado
 import cl.duocuc.miregistro.model.ResumenPanel
+import cl.duocuc.miregistro.model.Siniestro
 import cl.duocuc.miregistro.model.SiniestroAsegurado
 import cl.duocuc.miregistro.model.SiniestroResumen
 import cl.duocuc.miregistro.model.Usuario
@@ -545,7 +546,10 @@ class UsuarioDbHelper(context: Context) :
     }
 
     fun existeSiniestro(numero: String): Boolean =
-        readableDatabase.rawQuery("SELECT 1 FROM $TABLA_SINIESTROS WHERE $SIN_NUMERO = ?", arrayOf(numero)).use { it.moveToFirst() }
+        readableDatabase.rawQuery(
+            "SELECT 1 FROM $TABLA_SINIESTROS WHERE $SIN_NUMERO = ?",
+            arrayOf(numero)
+        ).use { it.moveToFirst() }
 
     fun todosLosSiniestrosAdmin(): List<SiniestroAdmin> {
         val lista = mutableListOf<SiniestroAdmin>()
@@ -603,7 +607,15 @@ class UsuarioDbHelper(context: Context) :
             arrayOf(idLiquidador.toString())
         ).use { c ->
             while (c.moveToNext()) {
-                lista.add(SiniestroResumen(c.getString(0), c.getString(1), c.getString(2), c.getString(3), c.getString(4)))
+                lista.add(
+                    SiniestroResumen(
+                        numero = c.getString(0),
+                        cliente = c.getString(1),
+                        tipo = c.getString(2),
+                        estado = c.getString(3),
+                        fecha = c.getString(4)
+                    )
+                )
             }
         }
         return lista
@@ -642,8 +654,13 @@ class UsuarioDbHelper(context: Context) :
     fun detalleSiniestro(numero: String): DetalleSiniestro? {
         val db = readableDatabase
         val docs = mutableListOf<Documento>()
-        db.rawQuery("SELECT $DOC_NOMBRE, $DOC_RECIBIDO FROM $TABLA_DOCUMENTOS WHERE $DOC_SINIESTRO = ?", arrayOf(numero)).use { c ->
-            while (c.moveToNext()) { docs.add(Documento(c.getString(0), c.getInt(1) == 1)) }
+        db.rawQuery(
+            "SELECT $DOC_NOMBRE, $DOC_RECIBIDO FROM $TABLA_DOCUMENTOS WHERE $DOC_SINIESTRO = ?",
+            arrayOf(numero)
+        ).use { c ->
+            while (c.moveToNext()) {
+                docs.add(Documento(c.getString(0), c.getInt(1) == 1))
+            }
         }
 
         val evidencias = obtenerEvidencias(numero)
@@ -665,7 +682,9 @@ class UsuarioDbHelper(context: Context) :
                     documentos = docs,
                     evidencias = evidencias
                 )
-            } else null
+            } else {
+                null
+            }
         }
     }
 
@@ -770,15 +789,21 @@ class UsuarioDbHelper(context: Context) :
         val db = writableDatabase
         db.beginTransaction()
         try {
-            db.execSQL("INSERT INTO $TABLA_DOCUMENTOS ($DOC_SINIESTRO, $DOC_NOMBRE, $DOC_RECIBIDO) VALUES (?, ?, 0)", arrayOf<Any?>(numero, nombre))
-            db.execSQL("UPDATE $TABLA_SINIESTROS SET $SIN_DOCS_PENDIENTES = $SIN_DOCS_PENDIENTES + 1 WHERE $SIN_NUMERO = ?", arrayOf<Any?>(numero))
+            db.execSQL(
+                "INSERT INTO $TABLA_DOCUMENTOS ($DOC_SINIESTRO, $DOC_NOMBRE, $DOC_RECIBIDO) VALUES (?, ?, 0)",
+                arrayOf<Any?>(numero, nombre)
+            )
+            db.execSQL(
+                "UPDATE $TABLA_SINIESTROS SET $SIN_DOCS_PENDIENTES = $SIN_DOCS_PENDIENTES + 1 WHERE $SIN_NUMERO = ?",
+                arrayOf<Any?>(numero)
+            )
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
         }
     }
 
-    fun buscarSiniestroPorNumero(numero: String): cl.duocuc.miregistro.model.Siniestro? {
+    fun buscarSiniestroPorNumero(numero: String): Siniestro? {
         val db = readableDatabase
         val query = """
             SELECT s.$SIN_ID, s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_TIPO, s.$SIN_FECHA, s.$SIN_ESTADO, s.$SIN_COMENTARIO
@@ -787,7 +812,7 @@ class UsuarioDbHelper(context: Context) :
             WHERE s.$SIN_NUMERO = ?
         """.trimIndent()
 
-        var siniestro: cl.duocuc.miregistro.model.Siniestro? = null
+        var siniestro: Siniestro? = null
         db.rawQuery(query, arrayOf(numero.trim().uppercase())).use { cursor ->
             if (cursor.moveToFirst()) {
                 val estadoStr = cursor.getString(5)
@@ -801,7 +826,7 @@ class UsuarioDbHelper(context: Context) :
                     else -> 1L
                 }
 
-                siniestro = cl.duocuc.miregistro.model.Siniestro(
+                siniestro = Siniestro(
                     idSiniestro = cursor.getLong(0),
                     numero = cursor.getString(1),
                     aseguradoNombre = cursor.getString(2),
@@ -818,7 +843,7 @@ class UsuarioDbHelper(context: Context) :
         return siniestro
     }
 
-    fun buscarSiniestroSeguro(numero: String, idUsuario: Long): cl.duocuc.miregistro.model.Siniestro? {
+    fun buscarSiniestroSeguro(numero: String, idUsuario: Long): Siniestro? {
         val db = readableDatabase
         val query = """
             SELECT s.$SIN_ID, s.$SIN_NUMERO, u.$USU_NOMBRE, s.$SIN_TIPO, s.$SIN_FECHA, s.$SIN_ESTADO, s.$SIN_COMENTARIO
@@ -827,7 +852,7 @@ class UsuarioDbHelper(context: Context) :
             WHERE s.$SIN_NUMERO = ? AND s.$SIN_ASEGURADO = ?
         """.trimIndent()
 
-        var siniestro: cl.duocuc.miregistro.model.Siniestro? = null
+        var siniestro: Siniestro? = null
         db.rawQuery(query, arrayOf(numero.trim().uppercase(), idUsuario.toString())).use { cursor ->
             if (cursor.moveToFirst()) {
                 val estadoStr = cursor.getString(5)
@@ -841,7 +866,7 @@ class UsuarioDbHelper(context: Context) :
                     else -> 1L
                 }
 
-                siniestro = cl.duocuc.miregistro.model.Siniestro(
+                siniestro = Siniestro(
                     idSiniestro = cursor.getLong(0),
                     numero = cursor.getString(1),
                     aseguradoNombre = cursor.getString(2),
@@ -897,9 +922,9 @@ class UsuarioDbHelper(context: Context) :
 
     fun actualizarContrasena(correo: String, nuevaClave: String): Boolean {
         val valores = ContentValues().apply {
-            put("clave_hash", hashearClave(nuevaClave))
+            put(USU_CLAVE, hashearClave(nuevaClave))
         }
-        return writableDatabase.update("usuarios", valores, "correo = ?", arrayOf(correo.trim().lowercase())) > 0
+        return writableDatabase.update(TABLA_USUARIOS, valores, "$USU_CORREO = ?", arrayOf(correo.trim().lowercase())) > 0
     }
 
     fun actualizarPerfil(idUsuario: Long, nombre: String, correo: String): Boolean {
@@ -951,8 +976,11 @@ class UsuarioDbHelper(context: Context) :
             while (c.moveToNext()) {
                 lista.add(
                     SiniestroAsegurado(
-                        c.getString(0), c.getString(1), c.getString(2) ?: "",
-                        c.getString(3), c.getString(4)
+                        numero = c.getString(0),
+                        tipo = c.getString(1),
+                        descripcion = c.getString(2) ?: "",
+                        estado = c.getString(3),
+                        fecha = c.getString(4)
                     )
                 )
             }
